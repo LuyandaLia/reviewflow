@@ -1,0 +1,117 @@
+{
+  "name": "reviewflow",
+  "displayName": "ReviewFlow",
+  "description": "IDE-native code review workspace for GitLab",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "reviewflow",
+          "title": "ReviewFlow",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "reviewflow": [
+        {
+          "id": "reviewflow.repositories",
+          "name": "Repositories"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "reviewflow.repositories",
+        "contents": "Cannot connect to the ReviewFlow backend.\n[Retry](command:reviewflow.retryConnection)",
+        "when": "reviewflow.backendAvailable == false"
+      },
+      {
+        "view": "reviewflow.repositories",
+        "contents": "No GitLab instances registered.\n[Add GitLab Instance](command:reviewflow.addGitLabInstance)\n\nOnce you have an instance, you can register repositories.",
+        "when": "reviewflow.backendAvailable && !reviewflow.hasInstances"
+      }
+    ],
+    "commands": [
+      {
+        "command": "reviewflow.retryConnection",
+        "title": "ReviewFlow: Retry Connection",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "reviewflow.addGitLabInstance",
+        "title": "ReviewFlow: Add GitLab Instance",
+        "icon": "$(add)"
+      },
+      {
+        "command": "reviewflow.removeGitLabInstance",
+        "title": "ReviewFlow: Remove GitLab Instance",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "reviewflow.addRepository",
+        "title": "ReviewFlow: Add Repository",
+        "icon": "$(add)"
+      },
+      {
+        "command": "reviewflow.removeRepository",
+        "title": "ReviewFlow: Remove Repository",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "reviewflow.refreshRepositories",
+        "title": "ReviewFlow: Refresh",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "reviewflow.addGitLabInstance",
+          "when": "view == reviewflow.repositories",
+          "group": "navigation@1"
+        },
+        {
+          "command": "reviewflow.addRepository",
+          "when": "view == reviewflow.repositories && reviewflow.hasInstances",
+          "group": "navigation@2"
+        },
+        {
+          "command": "reviewflow.refreshRepositories",
+          "when": "view == reviewflow.repositories",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "reviewflow.removeGitLabInstance",
+          "when": "view == reviewflow.repositories && viewItem == gitlabInstance",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.removeRepository",
+          "when": "view == reviewflow.repositories && viewItem == repository",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npm run compile && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.4.0"
+  }
+}
