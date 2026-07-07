@@ -1,34 +1,52 @@
 {
   "name": "reviewflow",
-  "displayName": "ReviewFlow",
-  "description": "GitLab code reviews directly from Cursor and VS Code.",
+  "displayName": "ReviewFlow — GitLab Code Reviews",
+  "description": "Review code where you write it. IDE-native GitLab merge request workspace for Cursor and VS Code — draft comments, review sessions, and publish to GitLab without leaving the editor.",
   "version": "0.1.0",
+  "publisher": "LuyandaLia",
   "author": {
     "name": "Luyanda Gcabo",
-    "email": "liagcabo@gmai.com"
+    "email": "Liagcabo@gmail.com",
+    "url": "https://github.com/LuyandaLia"
   },
   "license": "MIT",
+  "icon": "resources/icon.png",
   "repository": {
     "type": "git",
-    "url": "git@github.com:LuyandaLia/reviewflow.git"
+    "url": "https://github.com/LuyandaLia/reviewflow.git"
   },
-  "homepage": "https://github.com/luyandalia/reviewflow",
+  "homepage": "https://github.com/LuyandaLia/reviewflow#readme",
   "bugs": {
-    "url": "https://github.com/luyandalia/reviewflow/issues"
+    "url": "https://github.com/LuyandaLia/reviewflow/issues"
+  },
+  "qna": "marketplace",
+  "galleryBanner": {
+    "color": "#0F172A",
+    "theme": "dark"
   },
   "keywords": [
     "reviewflow",
     "gitlab",
+    "code review",
+    "merge request",
+    "pull request",
+    "mr",
     "cursor",
     "vscode",
-    "code-review",
-    "merge-request",
-    "developer-tools"
+    "ide",
+    "scm",
+    "diff",
+    "draft comments",
+    "developer tools",
+    "open source"
   ],
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
   "activationEvents": [
     "onView:reviewflow.repositories",
     "onCommand:reviewflow.addGitLabInstance",
