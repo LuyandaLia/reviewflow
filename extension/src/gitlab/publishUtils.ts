@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { BackendClient } from '../api/backendClient';
 import type { DraftComment, GitLabInstance, Repository } from '../models/types';
 import { GitLabApiError, GitLabClient } from './gitlabClient';
 import type { SecretStorageService } from './secretStorageService';
@@ -6,6 +7,7 @@ import type { SecretStorageService } from './secretStorageService';
 export async function getOrPromptPat(
   secrets: SecretStorageService,
   instance: GitLabInstance,
+  client: BackendClient,
 ): Promise<string | undefined> {
   const stored = await secrets.getPat(instance.id);
   if (stored) return stored;
@@ -20,7 +22,33 @@ export async function getOrPromptPat(
 
   if (!pat) return undefined;
   const trimmed = pat.trim();
+
+  // Validate immediately before storing
+  const glClient = new GitLabClient(instance.baseUrl, instance.apiPath, trimmed, instance.caBundlePath);
+  let user;
+  try {
+    user = await glClient.getCurrentUser();
+  } catch (err) {
+    vscode.window.showErrorMessage(
+      `ReviewFlow: GitLab authentication failed — ${formatGitLabError(err)}`,
+    );
+    return undefined;
+  }
+
   await secrets.storePat(instance.id, trimmed);
+
+  try {
+    await client.upsertInstanceUser(instance.id, {
+      gitlabUserId: user.id,
+      username: user.username,
+      displayName: user.name,
+      avatarUrl: user.avatar_url,
+    });
+  } catch {
+    // Non-fatal — PAT is valid, user profile storage is best-effort
+  }
+
+  vscode.window.showInformationMessage(`ReviewFlow: ✓ Connected as @${user.username}`);
   return trimmed;
 }
 
@@ -48,8 +76,7 @@ export async function promptMrIid(repo: Repository): Promise<number | undefined>
 
     if (urlProjectPath !== repo.gitlabProjectPath) {
       vscode.window.showErrorMessage(
-        `MR URL project path "${urlProjectPath}" does not match registered repository "${repo.gitlabProjectPath}". ` +
-          `Remove the URL path prefix or use the correct repository.`,
+        `MR URL project path "${urlProjectPath}" does not match registered repository "${repo.gitlabProjectPath}".`,
       );
       return undefined;
     }
@@ -63,15 +90,6 @@ export async function promptMrIid(repo: Repository): Promise<number | undefined>
   return undefined;
 }
 
-export function formatGitLabError(err: unknown): string {
-  if (err instanceof GitLabApiError) {
-    const parts: string[] = [`HTTP ${err.status}`, err.message];
-    if (err.endpoint) parts.push(`[${err.endpoint}]`);
-    return parts.join(' — ');
-  }
-  return err instanceof Error ? err.message : String(err);
-}
-
 export interface PublishResult {
   noteId: number;
   discussionId: string;
@@ -83,34 +101,40 @@ export async function publishSingleComment(
   projectId: number,
   mrIid: number,
   diffRefs: { base_sha: string; head_sha: string; start_sha: string } | null,
+  username?: string,
 ): Promise<PublishResult> {
-  const body =
-    comment.severity !== 'info'
-      ? `**[${comment.severity.toUpperCase()}]** ${comment.commentText}`
-      : comment.commentText;
+  const body = _buildCommentBody(comment, username);
 
-  if (diffRefs) {
-    try {
-      const disc = await glClient.createDiscussion(projectId, mrIid, body, {
+  const position = diffRefs
+    ? {
         baseSha: diffRefs.base_sha,
         headSha: diffRefs.head_sha,
         startSha: diffRefs.start_sha,
         newPath: comment.filePath,
         newLine: comment.lineNumber,
-      });
-      return { noteId: disc.notes[0].id, discussionId: disc.id };
-    } catch (err) {
-      // If the line is not in the diff, fall through to a general note.
-      if (!(err instanceof GitLabApiError && err.status === 400)) {
-        throw err;
       }
-    }
-  }
+    : null;
 
-  // Fallback: post as a general MR note with file/line context.
-  const noteBody = `\`${comment.filePath}:${comment.lineNumber}\`\n\n${body}`;
-  const note = await glClient.createNote(projectId, mrIid, noteBody);
-  return { noteId: note.id, discussionId: '' };
+  return glClient.publishDiscussion(projectId, mrIid, body, position);
+}
+
+function _buildCommentBody(comment: DraftComment, username?: string): string {
+  const text =
+    comment.severity !== 'info'
+      ? `**[${comment.severity.toUpperCase()}]** ${comment.commentText}`
+      : comment.commentText;
+
+  const attribution = username ? `ReviewFlow • @${username}` : 'ReviewFlow';
+  return `${text}\n\n---\n*${attribution}*`;
+}
+
+export function formatGitLabError(err: unknown): string {
+  if (err instanceof GitLabApiError) {
+    const parts: string[] = [`HTTP ${err.status}`, err.message];
+    if (err.endpoint) parts.push(`[${err.endpoint}]`);
+    return parts.join(' — ');
+  }
+  return err instanceof Error ? err.message : String(err);
 }
 
 export async function handleAuthError(
@@ -120,14 +144,14 @@ export async function handleAuthError(
 ): Promise<boolean> {
   if (err instanceof GitLabApiError && (err.status === 401 || err.status === 403)) {
     const action = await vscode.window.showErrorMessage(
-      `GitLab authentication failed for ${instance.displayName}. Token may have expired.`,
+      `ReviewFlow: GitLab authentication failed for ${instance.displayName}. Token may have expired.`,
       'Update Token',
       'Cancel',
     );
     if (action === 'Update Token') {
       await secrets.deletePat(instance.id);
       vscode.window.showInformationMessage(
-        'Token cleared. Run Publish again to enter a new token.',
+        'ReviewFlow: Token cleared — run Publish again to enter a new token.',
       );
     }
     return true;

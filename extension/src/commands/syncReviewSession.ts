@@ -56,7 +56,7 @@ export async function syncReviewSession(
     return;
   }
 
-  const pat = await getOrPromptPat(secrets, instance);
+  const pat = await getOrPromptPat(secrets, instance, client);
   if (!pat) return;
 
   const glClient = new GitLabClient(instance.baseUrl, instance.apiPath, pat, instance.caBundlePath);

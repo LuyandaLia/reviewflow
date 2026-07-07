@@ -35,6 +35,9 @@ async def init_db() -> None:
         await _migrate_add_review_sessions(conn)
         await _migrate_add_publish_status(conn)
         await _migrate_add_origin(conn)
+        sql4 = (_MIGRATIONS_DIR / "004_gitlab_users.sql").read_text()
+        await conn.executescript(sql4)
+        await _migrate_add_publish_metadata(conn)
 
 
 async def _migrate_remove_project_id(conn: aiosqlite.Connection) -> None:
@@ -81,6 +84,27 @@ async def _migrate_add_publish_status(conn: aiosqlite.Connection) -> None:
     elif "gitlab_mr_iid" not in columns:
         # Databases that got status/note/discussion before gitlab_mr_iid was added.
         await conn.execute("ALTER TABLE draft_comments ADD COLUMN gitlab_mr_iid INTEGER")
+        await conn.commit()
+
+
+async def _migrate_add_publish_metadata(conn: aiosqlite.Connection) -> None:
+    """One-time migration: add published_by_user_id, published_by_username, published_at."""
+    async with conn.execute("PRAGMA table_info(draft_comments)") as cursor:
+        columns = {row[1] for row in await cursor.fetchall()}
+    if "published_by_user_id" not in columns:
+        await conn.execute(
+            "ALTER TABLE draft_comments ADD COLUMN published_by_user_id INTEGER"
+        )
+        await conn.commit()
+    if "published_by_username" not in columns:
+        await conn.execute(
+            "ALTER TABLE draft_comments ADD COLUMN published_by_username TEXT"
+        )
+        await conn.commit()
+    if "published_at" not in columns:
+        await conn.execute(
+            "ALTER TABLE draft_comments ADD COLUMN published_at TEXT"
+        )
         await conn.commit()
 
 

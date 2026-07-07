@@ -2,6 +2,13 @@ import * as https from 'https';
 import * as http from 'http';
 import * as fs from 'fs';
 
+export interface GitLabCurrentUser {
+  id: number;
+  username: string;
+  name: string;
+  avatar_url: string | null;
+}
+
 export interface GitLabProject {
   id: number;
   path_with_namespace: string;
@@ -104,9 +111,17 @@ export class GitLabClient {
     });
   }
 
+  async getCurrentUser(): Promise<GitLabCurrentUser> {
+    return this.request<GitLabCurrentUser>('GET', '/user');
+  }
+
   async getProject(projectPath: string): Promise<GitLabProject> {
     const encoded = encodeURIComponent(projectPath);
     return this.request<GitLabProject>('GET', `/projects/${encoded}`);
+  }
+
+  async resolveProject(projectPath: string): Promise<GitLabProject> {
+    return this.getProject(projectPath);
   }
 
   async getMR(projectId: number, mrIid: number): Promise<GitLabMR> {
@@ -152,6 +167,31 @@ export class GitLabClient {
       `/projects/${projectId}/merge_requests/${mrIid}/notes`,
       { body },
     );
+  }
+
+  async publishDiscussion(
+    projectId: number,
+    mrIid: number,
+    body: string,
+    position: {
+      baseSha: string;
+      headSha: string;
+      startSha: string;
+      newPath: string;
+      newLine: number;
+    } | null,
+  ): Promise<{ noteId: number; discussionId: string }> {
+    if (position) {
+      try {
+        const disc = await this.createDiscussion(projectId, mrIid, body, position);
+        return { noteId: disc.notes[0].id, discussionId: disc.id };
+      } catch (err) {
+        if (!(err instanceof GitLabApiError && err.status === 400)) throw err;
+        // Line not in diff — fall through to general note
+      }
+    }
+    const note = await this.createNote(projectId, mrIid, body);
+    return { noteId: note.id, discussionId: '' };
   }
 
   async noteExists(projectId: number, mrIid: number, noteId: number): Promise<boolean> {

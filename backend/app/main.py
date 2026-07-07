@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.database import init_db
 from app.exceptions import ReviewFlowError
-from app.api import draft_comments, gitlab_instances, repositories, review_sessions
+from app.api import draft_comments, gitlab_instances, gitlab_users, repositories, review_sessions
 
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ async def reviewflow_error_handler(request: Request, exc: ReviewFlowError) -> JS
 
 
 app.include_router(gitlab_instances.router, prefix="/api/v1")
+app.include_router(gitlab_users.router, prefix="/api/v1")
 app.include_router(repositories.router, prefix="/api/v1")
 app.include_router(draft_comments.router, prefix="/api/v1")
 app.include_router(review_sessions.router, prefix="/api/v1")

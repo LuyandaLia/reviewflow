@@ -41,6 +41,9 @@ class DraftCommentService:
             gitlab_note_id=None,
             gitlab_discussion_id=None,
             gitlab_mr_iid=None,
+            published_by_user_id=None,
+            published_by_username=None,
+            published_at=None,
             created_at=now,
             updated_at=now,
         )
@@ -127,11 +130,21 @@ class DraftCommentService:
             """
             UPDATE draft_comments
             SET status = ?, gitlab_note_id = ?, gitlab_discussion_id = ?,
-                gitlab_mr_iid = ?, updated_at = ?
+                gitlab_mr_iid = ?, published_by_user_id = ?,
+                published_by_username = ?, published_at = ?, updated_at = ?
             WHERE id = ?
             """,
-            (req.status, req.gitlab_note_id, req.gitlab_discussion_id,
-             req.gitlab_mr_iid, now.isoformat(), comment_id),
+            (
+                req.status,
+                req.gitlab_note_id,
+                req.gitlab_discussion_id,
+                req.gitlab_mr_iid,
+                req.published_by_user_id,
+                req.published_by_username,
+                req.published_at,
+                now.isoformat(),
+                comment_id,
+            ),
         )
         await self._db.commit()
 
@@ -140,6 +153,9 @@ class DraftCommentService:
         comment.gitlab_note_id = req.gitlab_note_id
         comment.gitlab_discussion_id = req.gitlab_discussion_id
         comment.gitlab_mr_iid = req.gitlab_mr_iid
+        comment.published_by_user_id = req.published_by_user_id
+        comment.published_by_username = req.published_by_username
+        comment.published_at = req.published_at
         comment.updated_at = now
         return comment
 
@@ -189,6 +205,9 @@ def _row_to_comment(row: aiosqlite.Row) -> DraftComment:
         gitlab_note_id=row["gitlab_note_id"],
         gitlab_discussion_id=row["gitlab_discussion_id"],
         gitlab_mr_iid=row["gitlab_mr_iid"],
+        published_by_user_id=row["published_by_user_id"],
+        published_by_username=row["published_by_username"],
+        published_at=row["published_at"],
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )

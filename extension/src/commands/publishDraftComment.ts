@@ -20,7 +20,7 @@ export async function publishDraftComment(
   secrets: SecretStorageService,
 ): Promise<void> {
   if (item.comment.status === 'published') {
-    vscode.window.showInformationMessage('This comment is already published to GitLab.');
+    vscode.window.showInformationMessage('ReviewFlow: This comment is already published to GitLab.');
     return;
   }
 
@@ -38,7 +38,7 @@ export async function publishDraftComment(
     return;
   }
 
-  const pat = await getOrPromptPat(secrets, instance);
+  const pat = await getOrPromptPat(secrets, instance, client);
   if (!pat) return;
 
   const mrIid = await promptMrIid(item.repo);
@@ -46,15 +46,19 @@ export async function publishDraftComment(
 
   const glClient = new GitLabClient(instance.baseUrl, instance.apiPath, pat, instance.caBundlePath);
 
+  // Look up stored username for comment attribution (best-effort)
+  const storedUser = await client.getInstanceUser(instance.id);
+  const username = storedUser?.username;
+
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: 'Publishing comment to GitLab…',
+      title: 'ReviewFlow: Publishing comment to GitLab…',
       cancellable: false,
     },
     async () => {
       try {
-        const project = await glClient.getProject(item.repo.gitlabProjectPath);
+        const project = await glClient.resolveProject(item.repo.gitlabProjectPath);
         const mr = await glClient.getMR(project.id, mrIid);
 
         const { noteId, discussionId } = await publishSingleComment(
@@ -63,6 +67,7 @@ export async function publishDraftComment(
           project.id,
           mrIid,
           mr.diff_refs,
+          username,
         );
 
         await client.updateCommentPublishStatus(
@@ -71,10 +76,13 @@ export async function publishDraftComment(
           String(noteId),
           discussionId || undefined,
           mrIid,
+          storedUser?.gitlabUserId,
+          username,
+          new Date().toISOString(),
         );
 
         vscode.window.showInformationMessage(
-          `Comment published to MR !${mrIid} on ${instance.displayName}.`,
+          `ReviewFlow: Comment published to MR !${mrIid} on ${instance.displayName}.`,
         );
       } catch (err) {
         const wasAuthError = await handleAuthError(err, secrets, instance);

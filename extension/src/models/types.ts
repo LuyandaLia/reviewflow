@@ -55,6 +55,9 @@ export interface DraftComment {
   gitlabNoteId: string | null;
   gitlabDiscussionId: string | null;
   gitlabMrIid: number | null;
+  publishedByUserId: number | null;
+  publishedByUsername: string | null;
+  publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -67,4 +70,20 @@ export interface CreateDraftCommentInput {
   commentText: string;
   severity?: string;
   origin?: string;
+}
+
+export interface GitLabUser {
+  gitlabInstanceId: string;
+  gitlabUserId: number;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  lastVerified: string;
+}
+
+export interface UpsertGitLabUserInput {
+  gitlabUserId: number;
+  username: string;
+  displayName: string;
+  avatarUrl?: string | null;
 }

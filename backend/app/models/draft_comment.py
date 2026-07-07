@@ -19,6 +19,9 @@ class DraftComment:
     gitlab_note_id: str | None
     gitlab_discussion_id: str | None
     gitlab_mr_iid: int | None
+    published_by_user_id: int | None
+    published_by_username: str | None
+    published_at: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -42,6 +45,9 @@ class UpdatePublishStatusRequest(BaseModel):
     gitlab_note_id: str | None = None
     gitlab_discussion_id: str | None = None
     gitlab_mr_iid: int | None = None
+    published_by_user_id: int | None = None
+    published_by_username: str | None = None
+    published_at: str | None = None
 
 
 class DraftCommentResponse(BaseModel):
@@ -58,6 +64,9 @@ class DraftCommentResponse(BaseModel):
     gitlab_note_id: str | None
     gitlab_discussion_id: str | None
     gitlab_mr_iid: int | None
+    published_by_user_id: int | None
+    published_by_username: str | None
+    published_at: str | None
     created_at: str
     updated_at: str
 
@@ -77,6 +86,9 @@ class DraftCommentResponse(BaseModel):
             gitlab_note_id=c.gitlab_note_id,
             gitlab_discussion_id=c.gitlab_discussion_id,
             gitlab_mr_iid=c.gitlab_mr_iid,
+            published_by_user_id=c.published_by_user_id,
+            published_by_username=c.published_by_username,
+            published_at=c.published_at,
             created_at=c.created_at.isoformat(),
             updated_at=c.updated_at.isoformat(),
         )

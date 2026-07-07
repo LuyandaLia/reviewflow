@@ -31,7 +31,7 @@ export async function publishReviewSession(
   const toPublish = comments.filter((c) => c.status !== 'published');
   if (toPublish.length === 0) {
     vscode.window.showInformationMessage(
-      'All comments in this session are already published.',
+      'ReviewFlow: All comments in this session are already published.',
     );
     return;
   }
@@ -50,13 +50,18 @@ export async function publishReviewSession(
     return;
   }
 
-  const pat = await getOrPromptPat(secrets, instance);
+  const pat = await getOrPromptPat(secrets, instance, client);
   if (!pat) return;
 
   const mrIid = await promptMrIid(item.repo);
   if (!mrIid) return;
 
   const glClient = new GitLabClient(instance.baseUrl, instance.apiPath, pat, instance.caBundlePath);
+
+  // Look up stored username for comment attribution (best-effort)
+  const storedUser = await client.getInstanceUser(instance.id);
+  const username = storedUser?.username;
+  const publishedAt = new Date().toISOString();
 
   let successCount = 0;
   let failCount = 0;
@@ -65,7 +70,7 @@ export async function publishReviewSession(
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: `Publishing ${toPublish.length} comment(s) to MR !${mrIid}…`,
+      title: `ReviewFlow: Publishing ${toPublish.length} comment(s) to MR !${mrIid}…`,
       cancellable: false,
     },
     async (progress) => {
@@ -73,12 +78,14 @@ export async function publishReviewSession(
       let mr: { diff_refs: { base_sha: string; head_sha: string; start_sha: string } | null };
 
       try {
-        project = await glClient.getProject(item.repo.gitlabProjectPath);
+        project = await glClient.resolveProject(item.repo.gitlabProjectPath);
         mr = await glClient.getMR(project.id, mrIid);
       } catch (err) {
         authFailed = await handleAuthError(err, secrets, instance);
         if (!authFailed) {
-          vscode.window.showErrorMessage(`ReviewFlow: Cannot connect to GitLab — ${formatGitLabError(err)}`);
+          vscode.window.showErrorMessage(
+            `ReviewFlow: Cannot connect to GitLab — ${formatGitLabError(err)}`,
+          );
         }
         return;
       }
@@ -97,6 +104,7 @@ export async function publishReviewSession(
             project.id,
             mrIid,
             mr.diff_refs,
+            username,
           );
           await client.updateCommentPublishStatus(
             comment.id,
@@ -104,13 +112,15 @@ export async function publishReviewSession(
             String(noteId),
             discussionId || undefined,
             mrIid,
+            storedUser?.gitlabUserId,
+            username,
+            publishedAt,
           );
           successCount++;
         } catch (err) {
           const wasAuth = await handleAuthError(err, secrets, instance);
           if (wasAuth) {
             authFailed = true;
-            // Mark remaining as failed
             for (let j = i; j < toPublish.length; j++) {
               await client.updateCommentPublishStatus(toPublish[j].id, 'failed').catch(() => {});
               failCount++;
@@ -127,11 +137,11 @@ export async function publishReviewSession(
   if (!authFailed) {
     if (failCount === 0) {
       vscode.window.showInformationMessage(
-        `Published ${successCount} comment(s) to MR !${mrIid} on ${instance.displayName}.`,
+        `ReviewFlow: Published ${successCount} comment(s) to MR !${mrIid} on ${instance.displayName}.`,
       );
     } else {
       vscode.window.showWarningMessage(
-        `Published ${successCount} comment(s); ${failCount} failed — right-click failed items to retry.`,
+        `ReviewFlow: Published ${successCount} comment(s); ${failCount} failed — right-click failed items to retry.`,
       );
     }
   }

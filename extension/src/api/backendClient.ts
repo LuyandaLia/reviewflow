@@ -4,8 +4,10 @@ import type {
   CreateRepositoryInput,
   DraftComment,
   GitLabInstance,
+  GitLabUser,
   Repository,
   ReviewSession,
+  UpsertGitLabUserInput,
 } from '../models/types';
 import type { BackendManager } from '../backend/backendManager';
 
@@ -44,8 +46,20 @@ interface RawDraftComment {
   gitlab_note_id: string | null;
   gitlab_discussion_id: string | null;
   gitlab_mr_iid: number | null;
+  published_by_user_id: number | null;
+  published_by_username: string | null;
+  published_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface RawGitLabUser {
+  gitlab_instance_id: string;
+  gitlab_user_id: number;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  last_verified: string;
 }
 
 interface RawRepository {
@@ -94,8 +108,22 @@ function toDraftComment(raw: RawDraftComment): DraftComment {
     gitlabNoteId: raw.gitlab_note_id,
     gitlabDiscussionId: raw.gitlab_discussion_id,
     gitlabMrIid: raw.gitlab_mr_iid,
+    publishedByUserId: raw.published_by_user_id,
+    publishedByUsername: raw.published_by_username,
+    publishedAt: raw.published_at,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
+  };
+}
+
+function toGitLabUser(raw: RawGitLabUser): GitLabUser {
+  return {
+    gitlabInstanceId: raw.gitlab_instance_id,
+    gitlabUserId: raw.gitlab_user_id,
+    username: raw.username,
+    displayName: raw.display_name,
+    avatarUrl: raw.avatar_url,
+    lastVerified: raw.last_verified,
   };
 }
 
@@ -267,14 +295,39 @@ export class BackendClient {
     gitlabNoteId?: string,
     gitlabDiscussionId?: string,
     gitlabMrIid?: number,
+    publishedByUserId?: number,
+    publishedByUsername?: string,
+    publishedAt?: string,
   ): Promise<DraftComment> {
     const raw = await this.request<RawDraftComment>('PATCH', `/draft-comments/${id}/publish-status`, {
       status,
       gitlab_note_id: gitlabNoteId ?? null,
       gitlab_discussion_id: gitlabDiscussionId ?? null,
       gitlab_mr_iid: gitlabMrIid ?? null,
+      published_by_user_id: publishedByUserId ?? null,
+      published_by_username: publishedByUsername ?? null,
+      published_at: publishedAt ?? null,
     });
     return toDraftComment(raw);
+  }
+
+  async getInstanceUser(instanceId: string): Promise<GitLabUser | null> {
+    try {
+      const raw = await this.request<RawGitLabUser>('GET', `/gitlab-instances/${instanceId}/user`);
+      return toGitLabUser(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  async upsertInstanceUser(instanceId: string, input: UpsertGitLabUserInput): Promise<GitLabUser> {
+    const raw = await this.request<RawGitLabUser>('PUT', `/gitlab-instances/${instanceId}/user`, {
+      gitlab_user_id: input.gitlabUserId,
+      username: input.username,
+      display_name: input.displayName,
+      avatar_url: input.avatarUrl ?? null,
+    });
+    return toGitLabUser(raw);
   }
 
   async updateDraftComment(id: string, commentText: string): Promise<DraftComment> {

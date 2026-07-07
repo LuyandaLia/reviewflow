@@ -79,7 +79,9 @@ export class DraftCommentTreeItem extends vscode.TreeItem {
 
     const statusLabel =
       comment.status === 'published'
-        ? 'Published to GitLab'
+        ? comment.publishedByUsername
+          ? `Published to GitLab by @${comment.publishedByUsername}`
+          : 'Published to GitLab'
         : comment.status === 'failed'
           ? 'Publish failed — right-click to retry'
           : comment.origin === 'ai'
