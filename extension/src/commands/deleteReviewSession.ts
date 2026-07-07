@@ -1,0 +1,31 @@
+import * as vscode from 'vscode';
+import type { BackendClient } from '../api/backendClient';
+import type { DecorationManager } from '../decorations/decorationManager';
+import type { RepositoryTreeProvider } from '../providers/repositoryTreeProvider';
+import type { ReviewSessionTreeItem } from '../providers/repositoryTreeProvider';
+
+export async function deleteReviewSession(
+  item: ReviewSessionTreeItem,
+  client: BackendClient,
+  treeProvider: RepositoryTreeProvider,
+  decorationManager: DecorationManager,
+): Promise<void> {
+  const choice = await vscode.window.showWarningMessage(
+    `Delete session "${item.session.name}"? All draft comments in this session will also be deleted.`,
+    { modal: true },
+    'Delete',
+  );
+
+  if (choice !== 'Delete') return;
+
+  try {
+    await client.deleteReviewSession(item.session.id);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    vscode.window.showErrorMessage(`ReviewFlow: Failed to delete session — ${msg}`);
+    return;
+  }
+
+  treeProvider.refresh();
+  decorationManager.refresh();
+}

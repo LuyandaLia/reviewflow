@@ -7,7 +7,17 @@
     "vscode": "^1.85.0"
   },
   "categories": ["Other"],
-  "activationEvents": [],
+  "activationEvents": [
+    "onView:reviewflow.repositories",
+    "onCommand:reviewflow.addGitLabInstance",
+    "onCommand:reviewflow.addRepository",
+    "onCommand:reviewflow.addDraftComment",
+    "onCommand:reviewflow.refreshRepositories",
+    "onCommand:reviewflow.createReviewSession",
+    "onCommand:reviewflow.publishDraftComment",
+    "onCommand:reviewflow.publishReviewSession",
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -69,6 +79,70 @@
         "command": "reviewflow.refreshRepositories",
         "title": "ReviewFlow: Refresh",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "reviewflow.addDraftComment",
+        "title": "Mycelium: Add Draft Comment"
+      },
+      {
+        "command": "reviewflow.editDraftComment",
+        "title": "ReviewFlow: Edit Draft Comment",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "reviewflow.removeDraftComment",
+        "title": "ReviewFlow: Remove Comment",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "reviewflow.createReviewSession",
+        "title": "ReviewFlow: New Review Session",
+        "icon": "$(add)"
+      },
+      {
+        "command": "reviewflow.renameReviewSession",
+        "title": "ReviewFlow: Rename Session",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "reviewflow.deleteReviewSession",
+        "title": "ReviewFlow: Delete Session",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "reviewflow.activateReviewSession",
+        "title": "ReviewFlow: Set as Active Session",
+        "icon": "$(circle-filled)"
+      },
+      {
+        "command": "reviewflow.publishDraftComment",
+        "title": "ReviewFlow: Publish Comment to GitLab",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "reviewflow.publishReviewSession",
+        "title": "ReviewFlow: Publish Session to GitLab",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "reviewflow.syncReviewSession",
+        "title": "ReviewFlow: Sync Session with GitLab",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "reviewflow.suggestAiComments",
+        "title": "ReviewFlow: AI Suggest Comments",
+        "icon": "$(hubot)"
+      },
+      {
+        "command": "reviewflow.acceptAiSuggestion",
+        "title": "ReviewFlow: Accept AI Suggestion",
+        "icon": "$(check)"
+      },
+      {
+        "command": "reviewflow.dismissAiSuggestion",
+        "title": "ReviewFlow: Dismiss AI Suggestion",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -99,6 +173,72 @@
           "command": "reviewflow.removeRepository",
           "when": "view == reviewflow.repositories && viewItem == repository",
           "group": "inline"
+        },
+        {
+          "command": "reviewflow.createReviewSession",
+          "when": "view == reviewflow.repositories && viewItem == repository",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.activateReviewSession",
+          "when": "view == reviewflow.repositories && viewItem == reviewSession",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.renameReviewSession",
+          "when": "view == reviewflow.repositories && (viewItem == reviewSession || viewItem == reviewSessionActive)",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.deleteReviewSession",
+          "when": "view == reviewflow.repositories && (viewItem == reviewSession || viewItem == reviewSessionActive)",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.publishReviewSession",
+          "when": "view == reviewflow.repositories && (viewItem == reviewSession || viewItem == reviewSessionActive)",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.syncReviewSession",
+          "when": "view == reviewflow.repositories && (viewItem == reviewSession || viewItem == reviewSessionActive)",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.suggestAiComments",
+          "when": "view == reviewflow.repositories && (viewItem == reviewSession || viewItem == reviewSessionActive)",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.publishDraftComment",
+          "when": "view == reviewflow.repositories && (viewItem == draftComment || viewItem == draftCommentFailed)",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.editDraftComment",
+          "when": "view == reviewflow.repositories && (viewItem == draftComment || viewItem == draftCommentFailed)",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.removeDraftComment",
+          "when": "view == reviewflow.repositories && (viewItem == draftComment || viewItem == draftCommentFailed || viewItem == draftCommentPublished)",
+          "group": "inline"
+        },
+        {
+          "command": "reviewflow.acceptAiSuggestion",
+          "when": "view == reviewflow.repositories && viewItem == draftCommentAi",
+          "group": "inline@1"
+        },
+        {
+          "command": "reviewflow.dismissAiSuggestion",
+          "when": "view == reviewflow.repositories && viewItem == draftCommentAi",
+          "group": "inline@2"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "reviewflow.addDraftComment",
+          "group": "reviewflow@1"
         }
       ]
     }

@@ -1,8 +1,15 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
-import type { GitLabInstance, Repository } from '../models/types';
+import type { DraftComment, GitLabInstance, Repository, ReviewSession } from '../models/types';
 import type { BackendClient } from '../api/backendClient';
 
-export type RepositoryTreeItem = InstanceTreeItem | RepoTreeItem;
+export type RepositoryTreeItem =
+  | InstanceTreeItem
+  | RepoTreeItem
+  | ReviewSessionTreeItem
+  | EmptySessionsItem
+  | DraftCommentTreeItem
+  | EmptyDraftCommentsItem;
 
 export class InstanceTreeItem extends vscode.TreeItem {
   readonly contextValue = 'gitlabInstance';
@@ -19,10 +26,86 @@ export class RepoTreeItem extends vscode.TreeItem {
   readonly contextValue = 'repository';
 
   constructor(readonly repo: Repository) {
-    super(repo.displayName, vscode.TreeItemCollapsibleState.None);
+    super(repo.displayName, vscode.TreeItemCollapsibleState.Collapsed);
     this.description = repo.gitlabProjectPath;
     this.iconPath = new vscode.ThemeIcon('repo');
     this.tooltip = `${repo.displayName}\n${repo.localPath}\n${repo.gitlabProjectPath}`;
+  }
+}
+
+export class ReviewSessionTreeItem extends vscode.TreeItem {
+  readonly contextValue: string;
+
+  constructor(
+    readonly session: ReviewSession,
+    readonly repo: Repository,
+  ) {
+    super(session.name, vscode.TreeItemCollapsibleState.Expanded);
+    this.contextValue = session.isActive ? 'reviewSessionActive' : 'reviewSession';
+    this.description = session.isActive ? '(active)' : undefined;
+    this.iconPath = new vscode.ThemeIcon(session.isActive ? 'circle-filled' : 'circle-outline');
+    this.tooltip = `${session.name}${session.isActive ? ' — active' : ''}`;
+  }
+}
+
+export class EmptySessionsItem extends vscode.TreeItem {
+  readonly contextValue = 'emptySessions';
+
+  constructor() {
+    super('No review sessions', vscode.TreeItemCollapsibleState.None);
+    this.iconPath = new vscode.ThemeIcon('info');
+  }
+}
+
+export class EmptyDraftCommentsItem extends vscode.TreeItem {
+  readonly contextValue = 'emptyDraftComments';
+
+  constructor() {
+    super('No draft comments', vscode.TreeItemCollapsibleState.None);
+    this.iconPath = new vscode.ThemeIcon('info');
+  }
+}
+
+export class DraftCommentTreeItem extends vscode.TreeItem {
+  readonly contextValue: string;
+
+  constructor(
+    readonly comment: DraftComment,
+    readonly repo: Repository,
+  ) {
+    const basename = path.basename(comment.filePath);
+    super(`${basename}:${comment.lineNumber}`, vscode.TreeItemCollapsibleState.None);
+    this.description = comment.commentText.split('\n')[0];
+
+    const statusLabel =
+      comment.status === 'published'
+        ? 'Published to GitLab'
+        : comment.status === 'failed'
+          ? 'Publish failed — right-click to retry'
+          : comment.origin === 'ai'
+            ? 'AI Suggestion'
+            : 'Draft';
+    this.tooltip = `[${statusLabel}] ${comment.filePath}:${comment.lineNumber}\n\n${comment.commentText}`;
+
+    if (comment.status === 'published') {
+      this.contextValue = 'draftCommentPublished';
+      this.iconPath = new vscode.ThemeIcon('pass');
+    } else if (comment.status === 'failed') {
+      this.contextValue = 'draftCommentFailed';
+      this.iconPath = new vscode.ThemeIcon('warning');
+    } else if (comment.origin === 'ai') {
+      this.contextValue = 'draftCommentAi';
+      this.iconPath = new vscode.ThemeIcon('hubot');
+    } else {
+      this.contextValue = 'draftComment';
+      this.iconPath = new vscode.ThemeIcon('comment');
+    }
+
+    this.command = {
+      command: 'reviewflow.openDraftComment',
+      title: 'Open Comment',
+      arguments: [this],
+    };
   }
 }
 
@@ -63,6 +146,27 @@ export class RepositoryTreeProvider
       );
     }
 
+    if (element instanceof RepoTreeItem) {
+      try {
+        const sessions = await this.client.listReviewSessions(element.repo.id);
+        if (sessions.length === 0) return [new EmptySessionsItem()];
+        return sessions.map((s) => new ReviewSessionTreeItem(s, element.repo));
+      } catch {
+        return [new EmptySessionsItem()];
+      }
+    }
+
+    if (element instanceof ReviewSessionTreeItem) {
+      try {
+        const comments = await this.client.listSessionComments(element.session.id);
+        if (comments.length === 0) return [new EmptyDraftCommentsItem()];
+        return comments.map((c) => new DraftCommentTreeItem(c, element.repo));
+      } catch {
+        return [new EmptyDraftCommentsItem()];
+      }
+    }
+
+    // Root: fetch all instances and repos
     try {
       const [instances, repos] = await Promise.all([
         this.client.listGitLabInstances(),
@@ -92,13 +196,13 @@ export class RepositoryTreeProvider
     const previous = this._backendStatus;
     this._backendStatus = status;
 
-    if (!this._ready) return;
-
     await vscode.commands.executeCommand(
       'setContext',
       'reviewflow.backendAvailable',
       status === 'available',
     );
+
+    if (!this._ready) return;
 
     if (status === 'unavailable' && previous !== 'unavailable') {
       this._onStatusChanged.fire('unavailable');

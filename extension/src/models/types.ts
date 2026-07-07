@@ -18,6 +18,15 @@ export interface Repository {
   updatedAt: string;
 }
 
+export interface ReviewSession {
+  id: string;
+  repositoryId: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CreateGitLabInstanceInput {
   displayName: string;
   baseUrl: string;
@@ -30,4 +39,32 @@ export interface CreateRepositoryInput {
   gitlabInstanceId: string;
   gitlabProjectPath: string;
   displayName: string;
+}
+
+export interface DraftComment {
+  id: string;
+  repositoryId: string;
+  reviewSessionId: string;
+  filePath: string;
+  lineNumber: number;
+  endLineNumber: number | null;
+  commentText: string;
+  severity: string;
+  status: string; // 'draft' | 'published' | 'failed'
+  origin: string; // 'manual' | 'ai'
+  gitlabNoteId: string | null;
+  gitlabDiscussionId: string | null;
+  gitlabMrIid: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDraftCommentInput {
+  reviewSessionId: string;
+  filePath: string;
+  lineNumber: number;
+  endLineNumber?: number | null;
+  commentText: string;
+  severity?: string;
+  origin?: string;
 }

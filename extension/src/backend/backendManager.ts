@@ -33,10 +33,10 @@ export class BackendManager implements vscode.Disposable {
         setTimeout(() => reject(new Error('timeout')), 2000),
       );
       const res = await Promise.race([
-        fetch(`http://127.0.0.1:${this.port}/api/v1/gitlab-instances`),
+        fetch(`http://127.0.0.1:${this.port}/health`),
         timeout,
       ]);
-      return res.status < 500;
+      return res.status === 200;
     } catch {
       return false;
     }

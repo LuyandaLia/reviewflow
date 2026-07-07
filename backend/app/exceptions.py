@@ -57,3 +57,21 @@ class PathNotFoundError(ReviewFlowError):
 class PathNotADirectoryError(ReviewFlowError):
     def __init__(self, path: str) -> None:
         super().__init__("PATH_NOT_A_DIRECTORY", f"Path is not a directory: {path}")
+
+
+class DraftCommentNotFoundError(ReviewFlowError):
+    def __init__(self) -> None:
+        super().__init__("DRAFT_COMMENT_NOT_FOUND", "Draft comment not found.", 404)
+
+
+class ReviewSessionNotFoundError(ReviewFlowError):
+    def __init__(self) -> None:
+        super().__init__("REVIEW_SESSION_NOT_FOUND", "Review session not found.", 404)
+
+
+class DuplicateSessionNameError(ReviewFlowError):
+    def __init__(self) -> None:
+        super().__init__(
+            "DUPLICATE_SESSION_NAME",
+            "A review session with this name already exists for this repository.",
+        )

@@ -1,8 +1,11 @@
 import type {
+  CreateDraftCommentInput,
   CreateGitLabInstanceInput,
   CreateRepositoryInput,
+  DraftComment,
   GitLabInstance,
   Repository,
+  ReviewSession,
 } from '../models/types';
 import type { BackendManager } from '../backend/backendManager';
 
@@ -27,12 +30,39 @@ interface RawGitLabInstance {
   updated_at: string;
 }
 
+interface RawDraftComment {
+  id: string;
+  repository_id: string;
+  review_session_id: string;
+  file_path: string;
+  line_number: number;
+  end_line_number: number | null;
+  comment_text: string;
+  severity: string;
+  status: string;
+  origin: string;
+  gitlab_note_id: string | null;
+  gitlab_discussion_id: string | null;
+  gitlab_mr_iid: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface RawRepository {
   id: string;
   local_path: string;
   gitlab_instance_id: string;
   gitlab_project_path: string;
   display_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface RawReviewSession {
+  id: string;
+  repository_id: string;
+  name: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -49,6 +79,26 @@ function toInstance(raw: RawGitLabInstance): GitLabInstance {
   };
 }
 
+function toDraftComment(raw: RawDraftComment): DraftComment {
+  return {
+    id: raw.id,
+    repositoryId: raw.repository_id,
+    reviewSessionId: raw.review_session_id,
+    filePath: raw.file_path,
+    lineNumber: raw.line_number,
+    endLineNumber: raw.end_line_number,
+    commentText: raw.comment_text,
+    severity: raw.severity,
+    status: raw.status ?? 'draft',
+    origin: raw.origin ?? 'manual',
+    gitlabNoteId: raw.gitlab_note_id,
+    gitlabDiscussionId: raw.gitlab_discussion_id,
+    gitlabMrIid: raw.gitlab_mr_iid,
+    createdAt: raw.created_at,
+    updatedAt: raw.updated_at,
+  };
+}
+
 function toRepository(raw: RawRepository): Repository {
   return {
     id: raw.id,
@@ -56,6 +106,17 @@ function toRepository(raw: RawRepository): Repository {
     gitlabInstanceId: raw.gitlab_instance_id,
     gitlabProjectPath: raw.gitlab_project_path,
     displayName: raw.display_name,
+    createdAt: raw.created_at,
+    updatedAt: raw.updated_at,
+  };
+}
+
+function toReviewSession(raw: RawReviewSession): ReviewSession {
+  return {
+    id: raw.id,
+    repositoryId: raw.repository_id,
+    name: raw.name,
+    isActive: raw.is_active,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
   };
@@ -128,5 +189,102 @@ export class BackendClient {
 
   async deleteRepository(id: string): Promise<void> {
     await this.request<void>('DELETE', `/repositories/${id}`);
+  }
+
+  async listReviewSessions(repositoryId: string): Promise<ReviewSession[]> {
+    const raw = await this.request<RawReviewSession[]>(
+      'GET',
+      `/repositories/${repositoryId}/review-sessions`,
+    );
+    return raw.map(toReviewSession);
+  }
+
+  async createReviewSession(repositoryId: string, name: string): Promise<ReviewSession> {
+    const raw = await this.request<RawReviewSession>(
+      'POST',
+      `/repositories/${repositoryId}/review-sessions`,
+      { name },
+    );
+    return toReviewSession(raw);
+  }
+
+  async renameReviewSession(sessionId: string, name: string): Promise<ReviewSession> {
+    const raw = await this.request<RawReviewSession>('PATCH', `/review-sessions/${sessionId}`, {
+      name,
+    });
+    return toReviewSession(raw);
+  }
+
+  async activateReviewSession(sessionId: string): Promise<ReviewSession> {
+    const raw = await this.request<RawReviewSession>(
+      'POST',
+      `/review-sessions/${sessionId}/activate`,
+    );
+    return toReviewSession(raw);
+  }
+
+  async deleteReviewSession(sessionId: string): Promise<void> {
+    await this.request<void>('DELETE', `/review-sessions/${sessionId}`);
+  }
+
+  async listDraftComments(repositoryId: string): Promise<DraftComment[]> {
+    const raw = await this.request<RawDraftComment[]>(
+      'GET',
+      `/repositories/${repositoryId}/draft-comments`,
+    );
+    return raw.map(toDraftComment);
+  }
+
+  async listSessionComments(sessionId: string): Promise<DraftComment[]> {
+    const raw = await this.request<RawDraftComment[]>(
+      'GET',
+      `/review-sessions/${sessionId}/draft-comments`,
+    );
+    return raw.map(toDraftComment);
+  }
+
+  async createDraftComment(input: CreateDraftCommentInput): Promise<DraftComment> {
+    const raw = await this.request<RawDraftComment>('POST', '/draft-comments', {
+      review_session_id: input.reviewSessionId,
+      file_path: input.filePath,
+      line_number: input.lineNumber,
+      end_line_number: input.endLineNumber ?? null,
+      comment_text: input.commentText,
+      severity: input.severity ?? 'info',
+      origin: input.origin ?? 'manual',
+    });
+    return toDraftComment(raw);
+  }
+
+  async acceptAiSuggestion(id: string): Promise<DraftComment> {
+    const raw = await this.request<RawDraftComment>('POST', `/draft-comments/${id}/accept`);
+    return toDraftComment(raw);
+  }
+
+  async updateCommentPublishStatus(
+    id: string,
+    status: 'published' | 'failed' | 'draft',
+    gitlabNoteId?: string,
+    gitlabDiscussionId?: string,
+    gitlabMrIid?: number,
+  ): Promise<DraftComment> {
+    const raw = await this.request<RawDraftComment>('PATCH', `/draft-comments/${id}/publish-status`, {
+      status,
+      gitlab_note_id: gitlabNoteId ?? null,
+      gitlab_discussion_id: gitlabDiscussionId ?? null,
+      gitlab_mr_iid: gitlabMrIid ?? null,
+    });
+    return toDraftComment(raw);
+  }
+
+  async updateDraftComment(id: string, commentText: string): Promise<DraftComment> {
+    const raw = await this.request<RawDraftComment>('PATCH', `/draft-comments/${id}`, {
+      comment_text: commentText,
+    });
+    return toDraftComment(raw);
+  }
+
+  async deleteDraftComment(id: string): Promise<void> {
+    await this.request<void>('DELETE', `/draft-comments/${id}`);
   }
 }

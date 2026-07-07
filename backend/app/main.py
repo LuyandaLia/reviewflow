@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.database import init_db
 from app.exceptions import ReviewFlowError
-from app.api import gitlab_instances, repositories
+from app.api import draft_comments, gitlab_instances, repositories, review_sessions
 
 
 @asynccontextmanager
@@ -17,6 +17,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(title="ReviewFlow Backend", lifespan=lifespan)
+
+
+@app.get("/health")
+async def health() -> dict:
+    return {"status": "ok", "service": "reviewflow-backend"}
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,3 +42,5 @@ async def reviewflow_error_handler(request: Request, exc: ReviewFlowError) -> JS
 
 app.include_router(gitlab_instances.router, prefix="/api/v1")
 app.include_router(repositories.router, prefix="/api/v1")
+app.include_router(draft_comments.router, prefix="/api/v1")
+app.include_router(review_sessions.router, prefix="/api/v1")
