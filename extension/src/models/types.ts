@@ -77,6 +77,7 @@ export interface GitLabUser {
   gitlabUserId: number;
   username: string;
   displayName: string;
+  email: string | null;
   avatarUrl: string | null;
   lastVerified: string;
 }
@@ -85,5 +86,6 @@ export interface UpsertGitLabUserInput {
   gitlabUserId: number;
   username: string;
   displayName: string;
+  email?: string | null;
   avatarUrl?: string | null;
 }

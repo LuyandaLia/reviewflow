@@ -11,6 +11,7 @@ import {
   handleAuthError,
   promptMrIid,
   publishSingleComment,
+  type ReviewerIdentity,
 } from '../gitlab/publishUtils';
 
 export async function publishReviewSession(
@@ -58,9 +59,10 @@ export async function publishReviewSession(
 
   const glClient = new GitLabClient(instance.baseUrl, instance.apiPath, pat, instance.caBundlePath);
 
-  // Look up stored username for comment attribution (best-effort)
+  // Look up stored reviewer profile for comment attribution (best-effort)
   const storedUser = await client.getInstanceUser(instance.id);
-  const username = storedUser?.username;
+  const reviewer: ReviewerIdentity | undefined =
+    storedUser ? { username: storedUser.username, email: storedUser.email } : undefined;
   const publishedAt = new Date().toISOString();
 
   let successCount = 0;
@@ -104,7 +106,7 @@ export async function publishReviewSession(
             project.id,
             mrIid,
             mr.diff_refs,
-            username,
+            reviewer,
           );
           await client.updateCommentPublishStatus(
             comment.id,
@@ -113,7 +115,7 @@ export async function publishReviewSession(
             discussionId || undefined,
             mrIid,
             storedUser?.gitlabUserId,
-            username,
+            storedUser?.username,
             publishedAt,
           );
           successCount++;

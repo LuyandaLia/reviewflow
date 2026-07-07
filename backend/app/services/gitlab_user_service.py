@@ -22,12 +22,13 @@ class GitLabUserService:
         await self._db.execute(
             """
             INSERT INTO gitlab_users
-                (gitlab_instance_id, gitlab_user_id, username, display_name, avatar_url, last_verified)
-            VALUES (?, ?, ?, ?, ?, ?)
+                (gitlab_instance_id, gitlab_user_id, username, display_name, email, avatar_url, last_verified)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(gitlab_instance_id) DO UPDATE SET
                 gitlab_user_id = excluded.gitlab_user_id,
                 username       = excluded.username,
                 display_name   = excluded.display_name,
+                email          = excluded.email,
                 avatar_url     = excluded.avatar_url,
                 last_verified  = excluded.last_verified
             """,
@@ -36,6 +37,7 @@ class GitLabUserService:
                 req.gitlab_user_id,
                 req.username,
                 req.display_name,
+                req.email,
                 req.avatar_url,
                 now.isoformat(),
             ),
@@ -46,6 +48,7 @@ class GitLabUserService:
             gitlab_user_id=req.gitlab_user_id,
             username=req.username,
             display_name=req.display_name,
+            email=req.email,
             avatar_url=req.avatar_url,
             last_verified=now,
         )
@@ -64,6 +67,7 @@ def _row_to_user(row: aiosqlite.Row) -> GitLabUser:
         gitlab_user_id=row["gitlab_user_id"],
         username=row["username"],
         display_name=row["display_name"],
+        email=row["email"],
         avatar_url=row["avatar_url"],
         last_verified=datetime.fromisoformat(row["last_verified"]),
     )

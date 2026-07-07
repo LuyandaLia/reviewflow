@@ -103,23 +103,25 @@ export class DecorationManager implements vscode.Disposable {
 
 function _buildDecoration(comment: DraftComment): vscode.DecorationOptions {
   const line = comment.lineNumber - 1;
-  const hover = new vscode.MarkdownString();
+  const hover = new vscode.MarkdownString('', true);
 
+  let badge: string;
   if (comment.status === 'published') {
-    hover.appendMarkdown(`**Published to GitLab**\n\n`);
+    badge = `$(pass) **Published to GitLab**`;
   } else if (comment.status === 'failed') {
-    hover.appendMarkdown(`**Publish failed** — right-click to retry\n\n`);
+    badge = `$(warning) **Publish failed** — right-click to retry`;
   } else if (comment.origin === 'ai') {
-    hover.appendMarkdown(`**AI Suggestion** — right-click to accept or dismiss\n\n`);
+    badge = `$(hubot) **AI Suggestion** — right-click to accept or dismiss`;
   } else {
-    hover.appendMarkdown(`**${_capitalize(comment.severity)}**\n\n`);
+    badge = `$(comment) **${_capitalize(comment.severity)}**`;
   }
 
+  hover.appendMarkdown(`${badge}\n\n---\n\n`);
   hover.appendText(comment.commentText);
-  hover.appendMarkdown(`\n\n*${_formatDate(comment.createdAt)}*`);
+  hover.appendMarkdown(`\n\n---\n\n*${_formatDate(comment.createdAt)}*`);
 
   return {
-    range: new vscode.Range(line, 0, line, 0),
+    range: new vscode.Range(line, 0, line, Number.MAX_SAFE_INTEGER),
     hoverMessage: hover,
   };
 }

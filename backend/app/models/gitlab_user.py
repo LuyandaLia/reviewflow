@@ -10,6 +10,7 @@ class GitLabUser:
     gitlab_user_id: int
     username: str
     display_name: str
+    email: str | None
     avatar_url: str | None
     last_verified: datetime
 
@@ -18,6 +19,7 @@ class UpsertGitLabUserRequest(BaseModel):
     gitlab_user_id: int
     username: str
     display_name: str
+    email: str | None = None
     avatar_url: str | None = None
 
 
@@ -26,6 +28,7 @@ class GitLabUserResponse(BaseModel):
     gitlab_user_id: int
     username: str
     display_name: str
+    email: str | None
     avatar_url: str | None
     last_verified: str
 
@@ -36,6 +39,7 @@ class GitLabUserResponse(BaseModel):
             gitlab_user_id=u.gitlab_user_id,
             username=u.username,
             display_name=u.display_name,
+            email=u.email,
             avatar_url=u.avatar_url,
             last_verified=u.last_verified.isoformat(),
         )

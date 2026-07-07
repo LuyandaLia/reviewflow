@@ -58,6 +58,7 @@ interface RawGitLabUser {
   gitlab_user_id: number;
   username: string;
   display_name: string;
+  email: string | null;
   avatar_url: string | null;
   last_verified: string;
 }
@@ -122,6 +123,7 @@ function toGitLabUser(raw: RawGitLabUser): GitLabUser {
     gitlabUserId: raw.gitlab_user_id,
     username: raw.username,
     displayName: raw.display_name,
+    email: raw.email,
     avatarUrl: raw.avatar_url,
     lastVerified: raw.last_verified,
   };
@@ -325,6 +327,7 @@ export class BackendClient {
       gitlab_user_id: input.gitlabUserId,
       username: input.username,
       display_name: input.displayName,
+      email: input.email ?? null,
       avatar_url: input.avatarUrl ?? null,
     });
     return toGitLabUser(raw);

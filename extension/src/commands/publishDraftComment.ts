@@ -10,6 +10,7 @@ import {
   handleAuthError,
   promptMrIid,
   publishSingleComment,
+  type ReviewerIdentity,
 } from '../gitlab/publishUtils';
 
 export async function publishDraftComment(
@@ -46,9 +47,10 @@ export async function publishDraftComment(
 
   const glClient = new GitLabClient(instance.baseUrl, instance.apiPath, pat, instance.caBundlePath);
 
-  // Look up stored username for comment attribution (best-effort)
+  // Look up stored reviewer profile for comment attribution (best-effort)
   const storedUser = await client.getInstanceUser(instance.id);
-  const username = storedUser?.username;
+  const reviewer: ReviewerIdentity | undefined =
+    storedUser ? { username: storedUser.username, email: storedUser.email } : undefined;
 
   await vscode.window.withProgress(
     {
@@ -67,7 +69,7 @@ export async function publishDraftComment(
           project.id,
           mrIid,
           mr.diff_refs,
-          username,
+          reviewer,
         );
 
         await client.updateCommentPublishStatus(
@@ -77,7 +79,7 @@ export async function publishDraftComment(
           discussionId || undefined,
           mrIid,
           storedUser?.gitlabUserId,
-          username,
+          storedUser?.username,
           new Date().toISOString(),
         );
 

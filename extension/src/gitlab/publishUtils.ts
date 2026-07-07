@@ -42,13 +42,15 @@ export async function getOrPromptPat(
       gitlabUserId: user.id,
       username: user.username,
       displayName: user.name,
+      email: user.email,
       avatarUrl: user.avatar_url,
     });
   } catch {
     // Non-fatal — PAT is valid, user profile storage is best-effort
   }
 
-  vscode.window.showInformationMessage(`ReviewFlow: ✓ Connected as @${user.username}`);
+  const identity = _isProjectBot(user.username) ? user.name : `@${user.username}`;
+  vscode.window.showInformationMessage(`ReviewFlow: ✓ Connected as ${identity}`);
   return trimmed;
 }
 
@@ -95,15 +97,20 @@ export interface PublishResult {
   discussionId: string;
 }
 
+export interface ReviewerIdentity {
+  username: string;
+  email?: string | null;
+}
+
 export async function publishSingleComment(
   comment: DraftComment,
   glClient: GitLabClient,
   projectId: number,
   mrIid: number,
   diffRefs: { base_sha: string; head_sha: string; start_sha: string } | null,
-  username?: string,
+  reviewer?: ReviewerIdentity,
 ): Promise<PublishResult> {
-  const body = _buildCommentBody(comment, username);
+  const body = _buildCommentBody(comment, reviewer);
 
   const position = diffRefs
     ? {
@@ -118,14 +125,28 @@ export async function publishSingleComment(
   return glClient.publishDiscussion(projectId, mrIid, body, position);
 }
 
-function _buildCommentBody(comment: DraftComment, username?: string): string {
+function _buildCommentBody(comment: DraftComment, reviewer?: ReviewerIdentity): string {
   const text =
     comment.severity !== 'info'
       ? `**[${comment.severity.toUpperCase()}]** ${comment.commentText}`
       : comment.commentText;
 
-  const attribution = username ? `ReviewFlow • @${username}` : 'ReviewFlow';
-  return `${text}\n\n---\n*${attribution}*`;
+  const footer = _buildFooter(reviewer);
+  return `${text}\n\n---\n${footer}`;
+}
+
+function _buildFooter(reviewer?: ReviewerIdentity): string {
+  if (!reviewer || _isProjectBot(reviewer.username)) {
+    return '*ReviewFlow*';
+  }
+  const lines: string[] = ['**ReviewFlow**', ''];
+  if (reviewer.email) lines.push(reviewer.email);
+  lines.push(`@${reviewer.username}`);
+  return lines.join('\n');
+}
+
+function _isProjectBot(username: string): boolean {
+  return /^project_\d+_bot/.test(username);
 }
 
 export function formatGitLabError(err: unknown): string {

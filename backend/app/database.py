@@ -38,6 +38,7 @@ async def init_db() -> None:
         sql4 = (_MIGRATIONS_DIR / "004_gitlab_users.sql").read_text()
         await conn.executescript(sql4)
         await _migrate_add_publish_metadata(conn)
+        await _migrate_add_gitlab_user_email(conn)
 
 
 async def _migrate_remove_project_id(conn: aiosqlite.Connection) -> None:
@@ -181,3 +182,12 @@ async def _migrate_add_review_sessions(conn: aiosqlite.Connection) -> None:
         DROP TABLE draft_comments;
         ALTER TABLE draft_comments_new RENAME TO draft_comments;
     """)
+
+
+async def _migrate_add_gitlab_user_email(conn: aiosqlite.Connection) -> None:
+    """One-time migration: add email column to gitlab_users."""
+    async with conn.execute("PRAGMA table_info(gitlab_users)") as cursor:
+        columns = {row[1] for row in await cursor.fetchall()}
+    if "email" not in columns:
+        await conn.execute("ALTER TABLE gitlab_users ADD COLUMN email TEXT")
+        await conn.commit()
