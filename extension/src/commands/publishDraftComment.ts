@@ -63,7 +63,7 @@ export async function publishDraftComment(
         const project = await glClient.resolveProject(item.repo.gitlabProjectPath);
         const mr = await glClient.getMR(project.id, mrIid);
 
-        const { noteId, discussionId } = await publishSingleComment(
+        const { noteId, discussionId, isInline } = await publishSingleComment(
           item.comment,
           glClient,
           project.id,
@@ -83,9 +83,15 @@ export async function publishDraftComment(
           new Date().toISOString(),
         );
 
-        vscode.window.showInformationMessage(
-          `ReviewFlow: Comment published to MR !${mrIid} on ${instance.displayName}.`,
-        );
+        if (!isInline) {
+          vscode.window.showWarningMessage(
+            `ReviewFlow: Comment published to MR !${mrIid} as a general note — the line is no longer in the diff.`,
+          );
+        } else {
+          vscode.window.showInformationMessage(
+            `ReviewFlow: Comment published to MR !${mrIid} on ${instance.displayName}.`,
+          );
+        }
       } catch (err) {
         const wasAuthError = await handleAuthError(err, secrets, instance);
         if (!wasAuthError) {

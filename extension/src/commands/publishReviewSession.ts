@@ -67,6 +67,7 @@ export async function publishReviewSession(
 
   let successCount = 0;
   let failCount = 0;
+  let noteCount = 0;
   let authFailed = false;
 
   await vscode.window.withProgress(
@@ -100,7 +101,7 @@ export async function publishReviewSession(
         });
 
         try {
-          const { noteId, discussionId } = await publishSingleComment(
+          const { noteId, discussionId, isInline } = await publishSingleComment(
             comment,
             glClient,
             project.id,
@@ -119,6 +120,7 @@ export async function publishReviewSession(
             publishedAt,
           );
           successCount++;
+          if (!isInline) noteCount++;
         } catch (err) {
           const wasAuth = await handleAuthError(err, secrets, instance);
           if (wasAuth) {
@@ -137,13 +139,18 @@ export async function publishReviewSession(
   );
 
   if (!authFailed) {
+    const noteSuffix =
+      noteCount > 0
+        ? ` (${noteCount} posted as general note — line no longer in diff)`
+        : '';
     if (failCount === 0) {
-      vscode.window.showInformationMessage(
-        `ReviewFlow: Published ${successCount} comment(s) to MR !${mrIid} on ${instance.displayName}.`,
-      );
+      const msg = `ReviewFlow: Published ${successCount} comment(s) to MR !${mrIid} on ${instance.displayName}.${noteSuffix}`;
+      noteCount > 0
+        ? vscode.window.showWarningMessage(msg)
+        : vscode.window.showInformationMessage(msg);
     } else {
       vscode.window.showWarningMessage(
-        `ReviewFlow: Published ${successCount} comment(s); ${failCount} failed — right-click failed items to retry.`,
+        `ReviewFlow: Published ${successCount} comment(s); ${failCount} failed — right-click failed items to retry.${noteSuffix}`,
       );
     }
   }

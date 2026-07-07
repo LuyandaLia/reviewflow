@@ -1,8 +1,30 @@
 {
   "name": "reviewflow",
   "displayName": "ReviewFlow",
-  "description": "IDE-native code review workspace for GitLab",
+  "description": "GitLab code reviews directly from Cursor and VS Code.",
   "version": "0.1.0",
+  "author": {
+    "name": "Luyanda Gcabo",
+    "email": "liagcabo@gmai.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:LuyandaLia/reviewflow.git"
+  },
+  "homepage": "https://github.com/luyandalia/reviewflow",
+  "bugs": {
+    "url": "https://github.com/luyandalia/reviewflow/issues"
+  },
+  "keywords": [
+    "reviewflow",
+    "gitlab",
+    "cursor",
+    "vscode",
+    "code-review",
+    "merge-request",
+    "developer-tools"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },

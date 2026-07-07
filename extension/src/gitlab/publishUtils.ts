@@ -95,6 +95,7 @@ export async function promptMrIid(repo: Repository): Promise<number | undefined>
 export interface PublishResult {
   noteId: number;
   discussionId: string;
+  isInline: boolean;
 }
 
 export interface ReviewerIdentity {
@@ -122,7 +123,11 @@ export async function publishSingleComment(
       }
     : null;
 
-  return glClient.publishDiscussion(projectId, mrIid, body, position);
+  const result = await glClient.publishDiscussion(projectId, mrIid, body, position);
+  return {
+    ...result,
+    isInline: result.discussionId !== '',
+  };
 }
 
 function _buildCommentBody(comment: DraftComment, reviewer?: ReviewerIdentity): string {
@@ -139,10 +144,11 @@ function _buildFooter(reviewer?: ReviewerIdentity): string {
   if (!reviewer || _isProjectBot(reviewer.username)) {
     return '*ReviewFlow*';
   }
-  const lines: string[] = ['**ReviewFlow**', ''];
-  if (reviewer.email) lines.push(reviewer.email);
-  lines.push(`@${reviewer.username}`);
-  return lines.join('\n');
+  // Use \n\n between each element — single \n renders as a space in GitLab Markdown
+  let footer = '**ReviewFlow**\n\n';
+  if (reviewer.email) footer += `${reviewer.email}\n\n`;
+  footer += `@${reviewer.username}`;
+  return footer;
 }
 
 function _isProjectBot(username: string): boolean {
