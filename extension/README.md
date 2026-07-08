@@ -50,32 +50,15 @@ cursor --install-extension reviewflow-0.1.0.vsix
 
 ## Backend Setup
 
-ReviewFlow runs a small local backend (FastAPI + SQLite) that stores your draft comments and review sessions. The extension starts it automatically — but you need to set up a Python virtual environment once.
+ReviewFlow runs a small local backend (FastAPI + SQLite) that stores your draft comments and review sessions. **The extension sets this up automatically** — no manual steps required. On first activation, ReviewFlow will:
 
-### Mac / Linux
+1. Create a Python virtual environment inside the `backend/` directory
+2. Install the required dependencies
+3. Start the backend server
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+All you need is **Python 3.11+** installed and available on your PATH.
 
-### Windows (PowerShell)
-
-```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-> **Note (Windows):** If you see `running scripts is disabled`, run PowerShell as Administrator and execute:
-> ```powershell
-> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-> ```
-
-After the virtual environment is created, the extension starts the backend automatically on activation. You do not need to start it manually.
+> **Windows note:** If Python isn't on your PATH, download it from [python.org](https://www.python.org/downloads/) and check "Add Python to PATH" during installation.
 
 ---
 
@@ -121,25 +104,27 @@ To change a setting: **File → Preferences → Settings** → search "reviewflo
 
 The local backend failed to start. Check the **ReviewFlow Backend** output channel (`View → Output → ReviewFlow Backend`) for error details.
 
-**Mac / Linux** — verify the virtual environment exists:
+The most common cause is Python not being found. Verify it is installed and on your PATH:
+
+**Mac / Linux**
 ```bash
-ls backend/.venv/bin/python3
+python3 --version
 ```
 
-**Windows** — verify the virtual environment exists:
+**Windows**
 ```powershell
-Test-Path backend\.venv\Scripts\python.exe
+python --version
 ```
 
-If the path is missing, run the backend setup steps above.
+If Python is missing, install it from [python.org](https://www.python.org/downloads/) and reload the window. ReviewFlow will then set up the environment automatically.
 
-### ExecutionPolicy error on Windows
+### ExecutionPolicy error on Windows (venv setup fails)
 
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-Then re-run the virtual environment setup.
+Then reload the Cursor / VS Code window to trigger setup again.
 
 ### "GitLab authentication failed"
 

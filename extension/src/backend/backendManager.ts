@@ -49,21 +49,31 @@ export class BackendManager implements vscode.Disposable {
     return override ?? path.resolve(extensionPath, '..', 'backend');
   }
 
-  private _resolvePython(backendPath: string): string {
+  private _resolveSystemPython(): string {
     const override = vscode.workspace
       .getConfiguration('reviewflow')
       .get<string>('_pythonPath');
     if (override) return override;
+    return process.platform === 'win32' ? 'python' : 'python3';
+  }
+
+  private _resolveVenvPython(backendPath: string): string | undefined {
     const isWin = process.platform === 'win32';
     const venvPython = isWin
       ? path.join(backendPath, '.venv', 'Scripts', 'python.exe')
       : path.join(backendPath, '.venv', 'bin', 'python3');
-    return fs.existsSync(venvPython) ? venvPython : (isWin ? 'python' : 'python3');
+    return fs.existsSync(venvPython) ? venvPython : undefined;
   }
 
   private async _start(extensionPath: string): Promise<void> {
     const backendPath = this._resolveBackendPath(extensionPath);
-    const python = this._resolvePython(backendPath);
+
+    // Auto-provision venv if it doesn't exist yet
+    if (!this._resolveVenvPython(backendPath)) {
+      await this._provisionVenv(backendPath);
+    }
+
+    const python = this._resolveVenvPython(backendPath) ?? this._resolveSystemPython();
     const port = this.port;
 
     this._channel.appendLine(`Starting backend — ${python} -m uvicorn app.main:app --port ${port}`);
@@ -84,7 +94,51 @@ export class BackendManager implements vscode.Disposable {
     await this._waitForReady();
   }
 
-  private async _waitForReady(timeoutMs = 15_000): Promise<void> {
+  private async _provisionVenv(backendPath: string): Promise<void> {
+    const systemPython = this._resolveSystemPython();
+    const requirementsPath = path.join(backendPath, 'requirements.txt');
+
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: 'ReviewFlow: Setting up Python environment…',
+        cancellable: false,
+      },
+      async (progress) => {
+        progress.report({ message: 'Creating virtual environment…' });
+        await this._run(systemPython, ['-m', 'venv', '.venv'], backendPath);
+
+        if (fs.existsSync(requirementsPath)) {
+          progress.report({ message: 'Installing dependencies…' });
+          const pip = process.platform === 'win32'
+            ? path.join(backendPath, '.venv', 'Scripts', 'pip.exe')
+            : path.join(backendPath, '.venv', 'bin', 'pip');
+          await this._run(pip, ['install', '-r', 'requirements.txt'], backendPath);
+        }
+      },
+    );
+
+    this._channel.appendLine('Virtual environment ready.');
+  }
+
+  private _run(cmd: string, args: string[], cwd: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this._channel.appendLine(`> ${cmd} ${args.join(' ')}`);
+      const proc = cp.spawn(cmd, args, { cwd });
+      proc.stdout?.on('data', (d: Buffer) => this._channel.append(String(d)));
+      proc.stderr?.on('data', (d: Buffer) => this._channel.append(String(d)));
+      proc.on('error', reject);
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`"${cmd} ${args.join(' ')}" exited with code ${code}`));
+        }
+      });
+    });
+  }
+
+  private async _waitForReady(timeoutMs = 30_000): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
       if (await this._isHealthy()) return;
