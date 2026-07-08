@@ -12,7 +12,7 @@ ReviewFlow is an IDE-native GitLab code review workspace for Cursor and VS Code.
 - **Review sessions** — group comments by branch or MR; keep drafts until you're ready
 - **Publish to GitLab** — post comments as inline MR discussions in one click
 - **Sync with GitLab** — check whether published notes still exist on the MR
-- **AI suggestions** — optional AI-assisted comments powered by Anthropic Claude
+- **AI suggestions** — optional AI-assisted comments powered by Anthropic Claude *(currently in testing)*
 - **Self-hosted support** — works with GitLab.com and any self-hosted GitLab instance
 
 ---
@@ -29,10 +29,6 @@ ReviewFlow is an IDE-native GitLab code review workspace for Cursor and VS Code.
 ---
 
 ## Installation
-
-### From the Marketplace
-
-Search for **ReviewFlow** in the VS Code Extensions panel or install from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/).
 
 ### From a VSIX file
 
