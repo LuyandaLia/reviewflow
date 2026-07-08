@@ -54,8 +54,11 @@ export class BackendManager implements vscode.Disposable {
       .getConfiguration('reviewflow')
       .get<string>('_pythonPath');
     if (override) return override;
-    const venvPython = path.join(backendPath, '.venv', 'bin', 'python3');
-    return fs.existsSync(venvPython) ? venvPython : 'python3';
+    const isWin = process.platform === 'win32';
+    const venvPython = isWin
+      ? path.join(backendPath, '.venv', 'Scripts', 'python.exe')
+      : path.join(backendPath, '.venv', 'bin', 'python3');
+    return fs.existsSync(venvPython) ? venvPython : (isWin ? 'python' : 'python3');
   }
 
   private async _start(extensionPath: string): Promise<void> {
