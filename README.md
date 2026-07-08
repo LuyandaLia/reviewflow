@@ -6,138 +6,64 @@ ReviewFlow is an IDE-native GitLab code review workspace for Cursor and VS Code.
 
 ---
 
-## Getting the Code
+## Prerequisites
 
+| Requirement | Version | Notes |
+|---|---|---|
+| Python | 3.11 or later | Must be on your PATH — see [Python Setup](#python-setup) if needed |
+| Node.js | 20 or later | [nodejs.org](https://nodejs.org/) |
+| Git | any recent version | |
+| VS Code or Cursor | 1.85 or later | |
+
+---
+
+## Quickstart
+
+**1. Get the code**
 ```bash
 git clone https://github.com/LuyandaLia/reviewflow.git
 cd reviewflow
 ```
 
----
-
-## Installation
-
-### Prerequisites
-
-| Requirement | Version | Notes |
-|---|---|---|
-| Python | 3.11 or later | See platform instructions below |
-| Node.js | 20 or later | Required to build the extension |
-| npm | 9 or later | Comes with Node.js |
-| VS Code or Cursor | 1.85 or later | |
-| Git | any recent version | |
-
----
-
-### Mac
-
-**1. Install Python**
+**2. Build the extension**
 ```bash
-brew install python@3.11
-```
-
-**2. Install Node.js**
-```bash
-brew install node
-```
-
-**3. Set up the backend**
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-**4. Build and install the extension**
-```bash
-cd ../extension
+cd extension
 npm install
 npm run package
+```
+
+**3. Install in Cursor or VS Code**
+
+**Mac / Linux**
+```bash
 cursor --install-extension reviewflow-0.1.0.vsix
 # or for VS Code:
 code --install-extension reviewflow-0.1.0.vsix
 ```
 
----
-
-### Linux
-
-**1. Install Python and Node.js** (Ubuntu/Debian)
-```bash
-sudo apt update
-sudo apt install python3.11 python3.11-venv python3-pip nodejs npm
-```
-
-For other distributions, use the equivalent package manager (`dnf`, `pacman`, etc.).
-
-**2. Set up the backend**
-```bash
-cd backend
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-**3. Build and install the extension**
-```bash
-cd ../extension
-npm install
-npm run package
-code --install-extension reviewflow-0.1.0.vsix
-# or for Cursor:
-cursor --install-extension reviewflow-0.1.0.vsix
-```
-
----
-
-### Windows
-
-**1. Install Python**
-
-Download Python 3.11+ from [python.org](https://www.python.org/downloads/windows/) and run the installer. On the first screen, check **"Add Python to PATH"** before clicking Install.
-
-**2. Install Node.js**
-
-Download Node.js 20+ from [nodejs.org](https://nodejs.org/) and run the installer.
-
-**3. Set up the backend** (PowerShell)
+**Windows (PowerShell)**
 ```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-> If you see *"running scripts is disabled on this system"*, run:
-> ```powershell
-> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-> ```
-> Then retry the activation step.
-
-**4. Build and install the extension** (PowerShell)
-```powershell
-cd ..\extension
-npm install
-npm run package
 cursor --install-extension reviewflow-0.1.0.vsix
 # or for VS Code:
 code --install-extension reviewflow-0.1.0.vsix
 ```
 
+**4. Reload the editor and you're ready**
+
+Open the **ReviewFlow** panel in the activity bar. The extension sets up the Python backend automatically on first launch — no manual steps needed.
+
+> **First launch** takes a moment longer while ReviewFlow creates the Python environment and installs backend dependencies. A progress notification will appear.
+
 ---
 
-## First Run
+## Getting Started
 
-After installing the extension:
-
-1. Reload the editor window when prompted.
-2. Open the **ReviewFlow** panel in the activity bar.
-3. Click **Add GitLab Instance** and enter your GitLab URL.
-4. Paste a GitLab Personal Access Token with `api` scope — ReviewFlow validates it immediately.
-5. Add a repository, create a review session, and start drafting comments.
-
-The backend starts automatically when the extension activates. If it is the first run and no virtual environment exists yet, the extension will create it and install dependencies automatically.
+1. Click **Add GitLab Instance** — enter your GitLab URL (e.g. `https://gitlab.com`).
+2. Paste a Personal Access Token with `api` scope — ReviewFlow validates it immediately and shows **✓ Connected as @username**.
+3. Click **Add Repository** — point it to a local Git repository.
+4. Create a **Review Session** under the repository.
+5. Open a file, select a line, right-click → **ReviewFlow: Add Draft Comment**.
+6. Click **Publish Session to GitLab** when ready — enter the MR IID or paste the MR URL.
 
 ---
 
@@ -199,8 +125,6 @@ curl http://127.0.0.1:51515/health
 
 ### Reset the local database
 
-The SQLite database is stored at `~/.reviewflow/reviewflow.db` (Mac/Linux) or `%USERPROFILE%\.reviewflow\reviewflow.db` (Windows).
-
 **Mac / Linux**
 ```bash
 rm ~/.reviewflow/reviewflow.db
@@ -215,10 +139,54 @@ The backend recreates the schema on next startup.
 
 ---
 
+## Manual Setup
+
+> These steps are only needed if the automatic backend setup fails, or if you want to manage the Python environment yourself.
+
+### Python Setup
+
+**Mac**
+```bash
+brew install python@3.11
+```
+
+**Linux (Ubuntu/Debian)**
+```bash
+sudo apt update && sudo apt install python3.11 python3.11-venv python3-pip
+```
+
+**Windows**
+
+Download Python 3.11+ from [python.org](https://www.python.org/downloads/windows/). On the first installer screen, check **"Add Python to PATH"**.
+
+---
+
+### Manual Backend Setup
+
+**Mac / Linux**
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Windows (PowerShell)**
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+> If you see *"running scripts is disabled"*:
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+> Then retry the activation step.
+
+---
+
 ## License
 
-[MIT](LICENSE)
-
-## Contributors
-
-See [CONTRIBUTORS.md](CONTRIBUTORS.md).
+[MIT](LICENSE) — see also [CONTRIBUTORS.md](CONTRIBUTORS.md).
