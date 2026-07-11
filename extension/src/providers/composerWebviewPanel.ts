@@ -21,7 +21,6 @@ interface ComposerNew {
   repositoryId: string;
   repoLocalPath: string;
   severity: Severity;
-  initialText?: string;
 }
 
 interface ComposerEdit {
@@ -59,22 +58,6 @@ export class ComposerWebviewPanel implements vscode.Disposable {
   ) {}
 
   async openForNew(editor: vscode.TextEditor): Promise<void> {
-    await this._openForNewWithOptions(editor);
-  }
-
-  async openForNewWithText(
-    editor: vscode.TextEditor,
-    initialText: string,
-    severity: Severity,
-  ): Promise<void> {
-    await this._openForNewWithOptions(editor, initialText, severity);
-  }
-
-  private async _openForNewWithOptions(
-    editor: vscode.TextEditor,
-    initialText?: string,
-    severity?: Severity,
-  ): Promise<void> {
     const editorCtx = await resolveEditorContext(editor, this._client);
     if (!editorCtx) return;
 
@@ -90,8 +73,7 @@ export class ComposerWebviewPanel implements vscode.Disposable {
       reviewSessionId: editorCtx.activeSession.id,
       repositoryId: editorCtx.repo.id,
       repoLocalPath: editorCtx.repo.localPath,
-      severity: severity ?? 'info',
-      initialText,
+      severity: 'info',
     };
 
     this._openPanel(ctx);
@@ -161,7 +143,7 @@ export class ComposerWebviewPanel implements vscode.Disposable {
       this._panel.reveal(vscode.ViewColumn.Beside, true);
       this._panel.webview.postMessage({
         type: 'init',
-        text: ctx.type === 'edit' ? ctx.existingText : (ctx.initialText ?? ''),
+        text: ctx.type === 'edit' ? ctx.existingText : '',
         severity: ctx.severity,
         severityLabel: this._severityLabel(ctx.severity),
         fileName: ctx.fileName,
@@ -206,7 +188,7 @@ export class ComposerWebviewPanel implements vscode.Disposable {
       case 'ready':
         this._panel?.webview.postMessage({
           type: 'init',
-          text: ctx.type === 'edit' ? ctx.existingText : (ctx.initialText ?? ''),
+          text: ctx.type === 'edit' ? ctx.existingText : '',
           severity: ctx.severity,
           severityLabel: this._severityLabel(ctx.severity),
           fileName: ctx.fileName,
@@ -300,16 +282,10 @@ export class ComposerWebviewPanel implements vscode.Disposable {
     );
     const csp = webview.cspSource;
     const lineLabel = this._lineLabel(ctx);
-    const initialText =
-      ctx.type === 'edit'
-        ? escapeHtml(ctx.existingText)
-        : escapeHtml(ctx.initialText ?? '');
+    const initialText = ctx.type === 'edit' ? escapeHtml(ctx.existingText) : '';
     const initialSeverityLabel = this._severityLabel(ctx.severity);
     const actionLabel = ctx.type === 'edit' ? 'Edit comment' : 'New comment';
-    const hasText =
-      ctx.type === 'edit'
-        ? ctx.existingText.trim().length > 0
-        : (ctx.initialText ?? '').trim().length > 0;
+    const hasText = ctx.type === 'edit' && ctx.existingText.trim().length > 0;
     const disabledAttr = hasText ? '' : ' disabled';
 
     return `<!DOCTYPE html>

@@ -41,7 +41,7 @@
     "open source"
   ],
   "engines": {
-    "vscode": "^1.90.0"
+    "vscode": "^1.85.0"
   },
   "categories": [
     "SCM Providers",
@@ -56,8 +56,7 @@
     "onCommand:reviewflow.createReviewSession",
     "onCommand:reviewflow.publishDraftComment",
     "onCommand:reviewflow.publishReviewSession",
-    "onStartupFinished",
-    "onCommand:reviewflow.aiReviewSelectedCode"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -237,10 +236,6 @@
       {
         "command": "reviewflow.changeMrIid",
         "title": "ReviewFlow: Change MR IID"
-      },
-      {
-        "command": "reviewflow.aiReviewSelectedCode",
-        "title": "ReviewFlow: AI Review Selected Code"
       }
     ],
     "menus": {
@@ -337,11 +332,6 @@
         {
           "command": "reviewflow.addDraftComment",
           "group": "reviewflow@1"
-        },
-        {
-          "command": "reviewflow.aiReviewSelectedCode",
-          "group": "reviewflow@2",
-          "when": "reviewflow.backendAvailable && editorHasSelection"
         }
       ],
       "comments/commentThread/title": [
@@ -455,17 +445,7 @@
         "key": "escape",
         "when": "commentController == reviewflow && commentFocused"
       }
-    ],
-    "configuration": {
-      "properties": {
-        "reviewflow._aiModel": {
-          "type": "string",
-          "default": "",
-          "description": "AI model used for ReviewFlow AI Review. Set automatically on first use via the model picker. Clear to re-prompt.",
-          "scope": "application"
-        }
-      }
-    }
+    ]
   },
   "scripts": {
     "compile": "tsc -p ./",
