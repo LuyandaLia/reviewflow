@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 import type { BackendClient } from '../api/backendClient';
-import type { DecorationManager } from '../decorations/decorationManager';
+import type { CommentUiSync } from './inlineCommentActions';
 import type { DraftCommentTreeItem, RepositoryTreeProvider } from '../providers/repositoryTreeProvider';
 
 export async function acceptAiSuggestion(
   item: DraftCommentTreeItem,
   client: BackendClient,
   treeProvider: RepositoryTreeProvider,
-  decorationManager: DecorationManager,
+  commentUi: CommentUiSync,
 ): Promise<void> {
   try {
     await client.acceptAiSuggestion(item.comment.id);
@@ -17,5 +17,5 @@ export async function acceptAiSuggestion(
   }
 
   treeProvider.refresh();
-  decorationManager.refresh();
+  await commentUi.refresh();
 }

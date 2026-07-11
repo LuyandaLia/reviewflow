@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 import type { BackendClient } from '../api/backendClient';
-import type { DecorationManager } from '../decorations/decorationManager';
+import type { CommentUiSync } from './inlineCommentActions';
 import type { DraftCommentTreeItem, RepositoryTreeProvider } from '../providers/repositoryTreeProvider';
 
 export async function removeDraftComment(
   item: DraftCommentTreeItem,
   client: BackendClient,
   treeProvider: RepositoryTreeProvider,
-  decorationManager: DecorationManager,
+  commentUi: CommentUiSync,
 ): Promise<void> {
   const confirm = await vscode.window.showWarningMessage(
     `Delete comment on ${item.label as string}?`,
@@ -25,5 +25,5 @@ export async function removeDraftComment(
   }
 
   treeProvider.refresh();
-  decorationManager.refresh();
+  await commentUi.refresh();
 }

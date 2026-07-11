@@ -104,6 +104,7 @@ export class DecorationManager implements vscode.Disposable {
 function _buildDecoration(comment: DraftComment): vscode.DecorationOptions {
   const line = comment.lineNumber - 1;
   const hover = new vscode.MarkdownString('', true);
+  hover.supportThemeIcons = true;
 
   let badge: string;
   if (comment.status === 'published') {

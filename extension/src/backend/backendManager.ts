@@ -46,7 +46,31 @@ export class BackendManager implements vscode.Disposable {
     const override = vscode.workspace
       .getConfiguration('reviewflow')
       .get<string>('_backendPath');
-    return override ?? path.resolve(extensionPath, '..', 'backend');
+    if (override) return override;
+
+    const candidates = [
+      path.join(extensionPath, 'backend'),
+      path.resolve(extensionPath, '..', 'backend'),
+    ];
+
+    for (const candidate of candidates) {
+      if (fs.existsSync(path.join(candidate, 'app', 'main.py'))) {
+        return candidate;
+      }
+    }
+
+    return candidates[0];
+  }
+
+  private _assertBackendPresent(backendPath: string): void {
+    if (fs.existsSync(path.join(backendPath, 'app', 'main.py'))) {
+      return;
+    }
+
+    throw new Error(
+      `Backend not found at "${backendPath}". ` +
+        'Set reviewflow._backendPath to your ReviewFlow backend directory, or reinstall the extension.',
+    );
   }
 
   private _resolveSystemPython(): string {
@@ -67,6 +91,7 @@ export class BackendManager implements vscode.Disposable {
 
   private async _start(extensionPath: string): Promise<void> {
     const backendPath = this._resolveBackendPath(extensionPath);
+    this._assertBackendPresent(backendPath);
 
     // Auto-provision venv if it doesn't exist yet
     if (!this._resolveVenvPython(backendPath)) {

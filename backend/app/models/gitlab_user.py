@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -10,8 +13,8 @@ class GitLabUser:
     gitlab_user_id: int
     username: str
     display_name: str
-    email: str | None
-    avatar_url: str | None
+    email: Optional[str]
+    avatar_url: Optional[str]
     last_verified: datetime
 
 
@@ -19,8 +22,8 @@ class UpsertGitLabUserRequest(BaseModel):
     gitlab_user_id: int
     username: str
     display_name: str
-    email: str | None = None
-    avatar_url: str | None = None
+    email: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 
 class GitLabUserResponse(BaseModel):
@@ -28,8 +31,8 @@ class GitLabUserResponse(BaseModel):
     gitlab_user_id: int
     username: str
     display_name: str
-    email: str | None
-    avatar_url: str | None
+    email: Optional[str]
+    avatar_url: Optional[str]
     last_verified: str
 
     @classmethod

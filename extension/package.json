@@ -183,6 +183,59 @@
         "command": "reviewflow.dismissAiSuggestion",
         "title": "ReviewFlow: Dismiss AI Suggestion",
         "icon": "$(trash)"
+      },
+      {
+        "command": "reviewflow.saveInlineDraft",
+        "title": "Save Draft",
+        "enablement": "!commentIsEmpty"
+      },
+      {
+        "command": "reviewflow.publishInlineComment",
+        "title": "Publish",
+        "enablement": "!commentIsEmpty"
+      },
+      {
+        "command": "reviewflow.cancelInlineComposer",
+        "title": "Cancel"
+      },
+      {
+        "command": "reviewflow.cycleSeverity",
+        "title": "Severity",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "reviewflow.editInlineComment",
+        "title": "Edit",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "reviewflow.deleteInlineComment",
+        "title": "Delete",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "reviewflow.publishReviewComment",
+        "title": "Publish",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "reviewflow.copyInlineComment",
+        "title": "Copy",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "reviewflow.acceptInlineAiSuggestion",
+        "title": "Accept",
+        "icon": "$(check)"
+      },
+      {
+        "command": "reviewflow.dismissInlineAiSuggestion",
+        "title": "Dismiss",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "reviewflow.changeMrIid",
+        "title": "ReviewFlow: Change MR IID"
       }
     ],
     "menus": {
@@ -280,13 +333,126 @@
           "command": "reviewflow.addDraftComment",
           "group": "reviewflow@1"
         }
+      ],
+      "comments/commentThread/title": [
+        {
+          "command": "reviewflow.cycleSeverity",
+          "group": "navigation@1",
+          "when": "commentController == reviewflow"
+        }
+      ],
+      "comments/commentThread/context": [
+        {
+          "command": "reviewflow.saveInlineDraft",
+          "group": "inline@1",
+          "when": "commentController == reviewflow && !commentIsEmpty"
+        },
+        {
+          "command": "reviewflow.publishInlineComment",
+          "group": "inline@2",
+          "when": "commentController == reviewflow && !commentIsEmpty"
+        },
+        {
+          "command": "reviewflow.cancelInlineComposer",
+          "group": "inline@3",
+          "when": "commentController == reviewflow"
+        }
+      ],
+      "comments/comment/title": [
+        {
+          "command": "reviewflow.editInlineComment",
+          "group": "navigation@1",
+          "when": "commentController == reviewflow && comment == editable"
+        },
+        {
+          "command": "reviewflow.publishReviewComment",
+          "group": "navigation@2",
+          "when": "commentController == reviewflow && (comment == editable || comment == failed)"
+        },
+        {
+          "command": "reviewflow.copyInlineComment",
+          "group": "navigation@3",
+          "when": "commentController == reviewflow"
+        },
+        {
+          "command": "reviewflow.deleteInlineComment",
+          "group": "navigation@4",
+          "when": "commentController == reviewflow && comment != published"
+        },
+        {
+          "command": "reviewflow.acceptInlineAiSuggestion",
+          "group": "navigation@1",
+          "when": "commentController == reviewflow && comment == aiSuggestion"
+        },
+        {
+          "command": "reviewflow.dismissInlineAiSuggestion",
+          "group": "navigation@2",
+          "when": "commentController == reviewflow && comment == aiSuggestion"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "reviewflow.saveInlineDraft",
+          "when": "false"
+        },
+        {
+          "command": "reviewflow.publishInlineComment",
+          "when": "false"
+        },
+        {
+          "command": "reviewflow.cancelInlineComposer",
+          "when": "false"
+        },
+        {
+          "command": "reviewflow.cycleSeverity",
+          "when": "false"
+        },
+        {
+          "command": "reviewflow.editInlineComment",
+          "when": "false"
+        },
+        {
+          "command": "reviewflow.deleteInlineComment",
+          "when": "false"
+        },
+        {
+          "command": "reviewflow.publishReviewComment",
+          "when": "false"
+        },
+        {
+          "command": "reviewflow.copyInlineComment",
+          "when": "false"
+        },
+        {
+          "command": "reviewflow.acceptInlineAiSuggestion",
+          "when": "false"
+        },
+        {
+          "command": "reviewflow.dismissInlineAiSuggestion",
+          "when": "false"
+        }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "reviewflow.saveInlineDraft",
+        "key": "ctrl+enter",
+        "mac": "cmd+enter",
+        "when": "commentController == reviewflow && commentFocused && !commentIsEmpty"
+      },
+      {
+        "command": "reviewflow.cancelInlineComposer",
+        "key": "escape",
+        "when": "commentController == reviewflow && commentFocused"
+      }
+    ]
   },
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "npm run compile && vsce package --no-dependencies"
+    "stage-backend": "node scripts/stage-backend.mjs",
+    "unstage-backend": "node scripts/unstage-backend.mjs",
+    "package": "npm run stage-backend && npm run compile && vsce package --no-dependencies && npm run unstage-backend"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

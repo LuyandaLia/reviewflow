@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { BackendClient } from '../api/backendClient';
-import type { DecorationManager } from '../decorations/decorationManager';
+import type { CommentUiSync } from './inlineCommentActions';
 import type { RepositoryTreeProvider } from '../providers/repositoryTreeProvider';
 import type { ReviewSessionTreeItem } from '../providers/repositoryTreeProvider';
 
@@ -8,7 +8,7 @@ export async function deleteReviewSession(
   item: ReviewSessionTreeItem,
   client: BackendClient,
   treeProvider: RepositoryTreeProvider,
-  decorationManager: DecorationManager,
+  commentUi: CommentUiSync,
 ): Promise<void> {
   const choice = await vscode.window.showWarningMessage(
     `Delete session "${item.session.name}"? All draft comments in this session will also be deleted.`,
@@ -27,5 +27,5 @@ export async function deleteReviewSession(
   }
 
   treeProvider.refresh();
-  decorationManager.refresh();
+  await commentUi.refresh();
 }

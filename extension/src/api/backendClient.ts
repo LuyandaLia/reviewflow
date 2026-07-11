@@ -333,10 +333,18 @@ export class BackendClient {
     return toGitLabUser(raw);
   }
 
-  async updateDraftComment(id: string, commentText: string): Promise<DraftComment> {
-    const raw = await this.request<RawDraftComment>('PATCH', `/draft-comments/${id}`, {
+  async updateDraftComment(
+    id: string,
+    commentText: string,
+    severity?: string,
+  ): Promise<DraftComment> {
+    const body: { comment_text: string; severity?: string } = {
       comment_text: commentText,
-    });
+    };
+    if (severity !== undefined) {
+      body.severity = severity;
+    }
+    const raw = await this.request<RawDraftComment>('PATCH', `/draft-comments/${id}`, body);
     return toDraftComment(raw);
   }
 

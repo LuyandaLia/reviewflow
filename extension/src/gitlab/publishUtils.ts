@@ -92,6 +92,23 @@ export async function promptMrIid(repo: Repository): Promise<number | undefined>
   return undefined;
 }
 
+export async function getOrPromptMrIid(
+  repo: Repository,
+  extensionContext: vscode.ExtensionContext,
+): Promise<number | undefined> {
+  const key = `reviewflow.lastMrIid.${repo.id}`;
+  const cached = extensionContext.globalState.get<number>(key);
+  if (cached && cached > 0) {
+    return cached;
+  }
+
+  const iid = await promptMrIid(repo);
+  if (iid) {
+    await extensionContext.globalState.update(key, iid);
+  }
+  return iid;
+}
+
 export interface PublishResult {
   noteId: number;
   discussionId: string;

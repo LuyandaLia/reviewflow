@@ -102,14 +102,22 @@ class DraftCommentService:
             raise DraftCommentNotFoundError()
 
         now = datetime.now(timezone.utc)
-        await self._db.execute(
-            "UPDATE draft_comments SET comment_text = ?, updated_at = ? WHERE id = ?",
-            (req.comment_text, now.isoformat(), comment_id),
-        )
+        if req.severity is not None:
+            await self._db.execute(
+                "UPDATE draft_comments SET comment_text = ?, severity = ?, updated_at = ? WHERE id = ?",
+                (req.comment_text, req.severity, now.isoformat(), comment_id),
+            )
+        else:
+            await self._db.execute(
+                "UPDATE draft_comments SET comment_text = ?, updated_at = ? WHERE id = ?",
+                (req.comment_text, now.isoformat(), comment_id),
+            )
         await self._db.commit()
 
         updated = _row_to_comment(row)
         updated.comment_text = req.comment_text
+        if req.severity is not None:
+            updated.severity = req.severity
         updated.updated_at = now
         return updated
 

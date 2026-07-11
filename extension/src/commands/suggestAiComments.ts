@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import type { BackendClient } from '../api/backendClient';
 import { AnthropicProvider } from '../ai/anthropicProvider';
-import type { DecorationManager } from '../decorations/decorationManager';
+import type { CommentUiSync } from './inlineCommentActions';
 import type { SecretStorageService } from '../gitlab/secretStorageService';
 import type { RepositoryTreeProvider, ReviewSessionTreeItem } from '../providers/repositoryTreeProvider';
 
@@ -11,7 +11,7 @@ export async function suggestAiComments(
   item: ReviewSessionTreeItem,
   client: BackendClient,
   treeProvider: RepositoryTreeProvider,
-  decorationManager: DecorationManager,
+  commentUi: CommentUiSync,
   secrets: SecretStorageService,
 ): Promise<void> {
   const editor = vscode.window.activeTextEditor;
@@ -124,5 +124,5 @@ export async function suggestAiComments(
   );
 
   treeProvider.refresh();
-  decorationManager.refresh();
+  await commentUi.refresh();
 }

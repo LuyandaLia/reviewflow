@@ -1,4 +1,3 @@
-import * as path from 'path';
 import * as vscode from 'vscode';
 import { BackendManager } from './backend/backendManager';
 import { BackendClient } from './api/backendClient';
@@ -26,21 +25,48 @@ import { syncReviewSession } from './commands/syncReviewSession';
 import { suggestAiComments } from './commands/suggestAiComments';
 import { acceptAiSuggestion } from './commands/acceptAiSuggestion';
 import { dismissAiSuggestion } from './commands/dismissAiSuggestion';
-import { DecorationManager } from './decorations/decorationManager';
+import {
+  cancelInlineComposer,
+  changeCachedMrIid,
+  publishInlineComment,
+  publishReviewComment,
+  saveInlineDraft,
+} from './commands/inlineCommentActions';
+import { DraftCommentController } from './providers/draftCommentController';
+import { InlineCommentComposer } from './providers/inlineCommentComposer';
+import { ComposerWebviewPanel } from './providers/composerWebviewPanel';
+import { ReviewComment } from './providers/reviewComment';
 import { SecretStorageService } from './gitlab/secretStorageService';
 
 export function activate(context: vscode.ExtensionContext): void {
   const manager = new BackendManager();
   const client = new BackendClient(manager);
   const treeProvider = new RepositoryTreeProvider(client);
-  const decorationManager = new DecorationManager(client, context.extensionUri);
   const secretsService = new SecretStorageService(context.secrets);
+
+  const refreshCommentUi = async (): Promise<void> => {
+    await commentController.refresh();
+  };
+
+  const commentController = new DraftCommentController(client, () => {
+    treeProvider.refresh();
+  });
+  const composerPanel = new ComposerWebviewPanel(
+    context.extensionUri,
+    client,
+    secretsService,
+    context,
+    commentController,
+    treeProvider,
+  );
+  const composer = new InlineCommentComposer(commentController, composerPanel);
 
   let notificationActive = false;
 
   context.subscriptions.push(
     manager,
-    decorationManager,
+    commentController,
+    composerPanel,
 
     treeProvider.onStatusChanged((status) => {
       if (status === 'unavailable' && !notificationActive) {
@@ -68,6 +94,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     vscode.commands.registerCommand('reviewflow.refreshRepositories', () => {
       treeProvider.refresh();
+      void refreshCommentUi();
     }),
 
     vscode.commands.registerCommand('reviewflow.retryConnection', () => {
@@ -93,17 +120,18 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
 
     vscode.commands.registerCommand('reviewflow.addDraftComment', () =>
-      addDraftComment(client, treeProvider, decorationManager),
+      addDraftComment(composer),
     ),
 
     vscode.commands.registerCommand(
       'reviewflow.editDraftComment',
-      (item: DraftCommentTreeItem) => editDraftComment(item, client, treeProvider, decorationManager),
+      (item: DraftCommentTreeItem) => editDraftComment(item, composer),
     ),
 
     vscode.commands.registerCommand(
       'reviewflow.removeDraftComment',
-      (item: DraftCommentTreeItem) => removeDraftComment(item, client, treeProvider, decorationManager),
+      (item: DraftCommentTreeItem) =>
+        removeDraftComment(item, client, treeProvider, commentController),
     ),
 
     vscode.commands.registerCommand(
@@ -118,61 +146,136 @@ export function activate(context: vscode.ExtensionContext): void {
 
     vscode.commands.registerCommand(
       'reviewflow.deleteReviewSession',
-      (item: ReviewSessionTreeItem) => deleteReviewSession(item, client, treeProvider, decorationManager),
+      (item: ReviewSessionTreeItem) =>
+        deleteReviewSession(item, client, treeProvider, commentController),
     ),
 
     vscode.commands.registerCommand(
       'reviewflow.activateReviewSession',
-      (item: ReviewSessionTreeItem) => activateReviewSession(item, client, treeProvider),
+      (item: ReviewSessionTreeItem) =>
+        activateReviewSession(item, client, treeProvider, commentController),
     ),
 
     vscode.commands.registerCommand(
       'reviewflow.publishDraftComment',
       (item: DraftCommentTreeItem) =>
-        publishDraftComment(item, client, treeProvider, decorationManager, secretsService),
+        publishDraftComment(
+          item,
+          client,
+          treeProvider,
+          commentController,
+          secretsService,
+          context,
+        ),
     ),
 
     vscode.commands.registerCommand(
       'reviewflow.publishReviewSession',
       (item: ReviewSessionTreeItem) =>
-        publishReviewSession(item, client, treeProvider, decorationManager, secretsService),
+        publishReviewSession(
+          item,
+          client,
+          treeProvider,
+          commentController,
+          secretsService,
+          context,
+        ),
     ),
 
     vscode.commands.registerCommand(
       'reviewflow.syncReviewSession',
       (item: ReviewSessionTreeItem) =>
-        syncReviewSession(item, client, treeProvider, decorationManager, secretsService),
+        syncReviewSession(item, client, treeProvider, commentController, secretsService),
     ),
 
     vscode.commands.registerCommand(
       'reviewflow.suggestAiComments',
       (item: ReviewSessionTreeItem) =>
-        suggestAiComments(item, client, treeProvider, decorationManager, secretsService),
+        suggestAiComments(item, client, treeProvider, commentController, secretsService),
     ),
 
     vscode.commands.registerCommand(
       'reviewflow.acceptAiSuggestion',
       (item: DraftCommentTreeItem) =>
-        acceptAiSuggestion(item, client, treeProvider, decorationManager),
+        acceptAiSuggestion(item, client, treeProvider, commentController),
     ),
 
     vscode.commands.registerCommand(
       'reviewflow.dismissAiSuggestion',
       (item: DraftCommentTreeItem) =>
-        dismissAiSuggestion(item, client, treeProvider, decorationManager),
+        dismissAiSuggestion(item, client, treeProvider, commentController),
     ),
 
     vscode.commands.registerCommand(
       'reviewflow.openDraftComment',
       async (item: DraftCommentTreeItem) => {
-        const uri = vscode.Uri.file(path.join(item.repo.localPath, item.comment.filePath));
-        const doc = await vscode.workspace.openTextDocument(uri);
-        const editor = await vscode.window.showTextDocument(doc);
-        const line = item.comment.lineNumber - 1;
-        const pos = new vscode.Position(line, 0);
-        editor.selection = new vscode.Selection(pos, pos);
-        editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter);
+        await composer.openExisting(item.comment, item.repo);
       },
+    ),
+
+    vscode.commands.registerCommand('reviewflow.saveInlineDraft', (reply: vscode.CommentReply) =>
+      saveInlineDraft(reply, commentController, treeProvider, commentController),
+    ),
+
+    vscode.commands.registerCommand('reviewflow.publishInlineComment', (reply: vscode.CommentReply) =>
+      publishInlineComment(
+        reply,
+        commentController,
+        client,
+        secretsService,
+        context,
+        treeProvider,
+        commentController,
+      ),
+    ),
+
+    vscode.commands.registerCommand(
+      'reviewflow.cancelInlineComposer',
+      (arg?: vscode.CommentThread | vscode.CommentReply) =>
+        cancelInlineComposer(arg, commentController),
+    ),
+
+    vscode.commands.registerCommand('reviewflow.cycleSeverity', (thread: vscode.CommentThread) =>
+      commentController.cycleSeverity(thread),
+    ),
+
+    vscode.commands.registerCommand('reviewflow.editInlineComment', async (comment: ReviewComment) =>
+      composerPanel.openForEditInline(comment),
+    ),
+
+    vscode.commands.registerCommand('reviewflow.deleteInlineComment', async (comment: ReviewComment) => {
+      await commentController.deleteComment(comment);
+      treeProvider.refresh();
+    }),
+
+    vscode.commands.registerCommand('reviewflow.publishReviewComment', (comment: ReviewComment) =>
+      publishReviewComment(
+        comment,
+        commentController,
+        client,
+        secretsService,
+        context,
+        treeProvider,
+        commentController,
+      ),
+    ),
+
+    vscode.commands.registerCommand('reviewflow.copyInlineComment', (comment: ReviewComment) =>
+      commentController.copyComment(comment),
+    ),
+
+    vscode.commands.registerCommand('reviewflow.acceptInlineAiSuggestion', async (comment: ReviewComment) => {
+      await commentController.acceptAiComment(comment);
+      treeProvider.refresh();
+    }),
+
+    vscode.commands.registerCommand('reviewflow.dismissInlineAiSuggestion', async (comment: ReviewComment) => {
+      await commentController.dismissAiComment(comment);
+      treeProvider.refresh();
+    }),
+
+    vscode.commands.registerCommand('reviewflow.changeMrIid', () =>
+      changeCachedMrIid(client, context),
     ),
   );
 
@@ -184,7 +287,7 @@ export function activate(context: vscode.ExtensionContext): void {
     .then(() => {
       treeProvider.setReady();
       treeProvider.refresh();
-      decorationManager.refresh();
+      void refreshCommentUi();
     })
     .catch((err: Error) => {
       treeProvider.setReady();

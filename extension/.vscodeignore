@@ -1,7 +1,10 @@
 .vscode/**
 src/**
+scripts/**
 node_modules/**
 tsconfig.json
 **/*.map
 **/*.ts
 !out/**
+backend/.venv/**
+backend/**/__pycache__/**

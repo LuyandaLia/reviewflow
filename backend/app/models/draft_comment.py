@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -11,30 +14,31 @@ class DraftComment:
     review_session_id: str
     file_path: str
     line_number: int
-    end_line_number: int | None
+    end_line_number: Optional[int]
     comment_text: str
     severity: str
     status: str
     origin: str
-    gitlab_note_id: str | None
-    gitlab_discussion_id: str | None
-    gitlab_mr_iid: int | None
-    published_by_user_id: int | None
-    published_by_username: str | None
-    published_at: str | None
+    gitlab_note_id: Optional[str]
+    gitlab_discussion_id: Optional[str]
+    gitlab_mr_iid: Optional[int]
+    published_by_user_id: Optional[int]
+    published_by_username: Optional[str]
+    published_at: Optional[str]
     created_at: datetime
     updated_at: datetime
 
 
 class UpdateDraftCommentRequest(BaseModel):
     comment_text: str
+    severity: Optional[str] = None
 
 
 class CreateDraftCommentRequest(BaseModel):
     review_session_id: str
     file_path: str
     line_number: int
-    end_line_number: int | None = None
+    end_line_number: Optional[int] = None
     comment_text: str
     severity: str = "info"
     origin: str = "manual"
@@ -42,12 +46,12 @@ class CreateDraftCommentRequest(BaseModel):
 
 class UpdatePublishStatusRequest(BaseModel):
     status: str
-    gitlab_note_id: str | None = None
-    gitlab_discussion_id: str | None = None
-    gitlab_mr_iid: int | None = None
-    published_by_user_id: int | None = None
-    published_by_username: str | None = None
-    published_at: str | None = None
+    gitlab_note_id: Optional[str] = None
+    gitlab_discussion_id: Optional[str] = None
+    gitlab_mr_iid: Optional[int] = None
+    published_by_user_id: Optional[int] = None
+    published_by_username: Optional[str] = None
+    published_at: Optional[str] = None
 
 
 class DraftCommentResponse(BaseModel):
@@ -56,17 +60,17 @@ class DraftCommentResponse(BaseModel):
     review_session_id: str
     file_path: str
     line_number: int
-    end_line_number: int | None
+    end_line_number: Optional[int]
     comment_text: str
     severity: str
     status: str
     origin: str
-    gitlab_note_id: str | None
-    gitlab_discussion_id: str | None
-    gitlab_mr_iid: int | None
-    published_by_user_id: int | None
-    published_by_username: str | None
-    published_at: str | None
+    gitlab_note_id: Optional[str]
+    gitlab_discussion_id: Optional[str]
+    gitlab_mr_iid: Optional[int]
+    published_by_user_id: Optional[int]
+    published_by_username: Optional[str]
+    published_at: Optional[str]
     created_at: str
     updated_at: str
 

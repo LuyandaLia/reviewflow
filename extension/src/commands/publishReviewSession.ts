@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import type { BackendClient } from '../api/backendClient';
-import type { DecorationManager } from '../decorations/decorationManager';
+import type { CommentUiSync } from './inlineCommentActions';
 import type { RepositoryTreeProvider, ReviewSessionTreeItem } from '../providers/repositoryTreeProvider';
 import { GitLabClient } from '../gitlab/gitlabClient';
 import { SecretStorageService } from '../gitlab/secretStorageService';
@@ -9,7 +9,7 @@ import {
   formatGitLabError,
   getOrPromptPat,
   handleAuthError,
-  promptMrIid,
+  getOrPromptMrIid,
   publishSingleComment,
   type ReviewerIdentity,
 } from '../gitlab/publishUtils';
@@ -18,8 +18,9 @@ export async function publishReviewSession(
   item: ReviewSessionTreeItem,
   client: BackendClient,
   treeProvider: RepositoryTreeProvider,
-  decorationManager: DecorationManager,
+  commentUi: CommentUiSync,
   secrets: SecretStorageService,
+  extensionContext: vscode.ExtensionContext,
 ): Promise<void> {
   let comments;
   try {
@@ -54,7 +55,7 @@ export async function publishReviewSession(
   const pat = await getOrPromptPat(secrets, instance, client);
   if (!pat) return;
 
-  const mrIid = await promptMrIid(item.repo);
+  const mrIid = await getOrPromptMrIid(item.repo, extensionContext);
   if (!mrIid) return;
 
   const glClient = new GitLabClient(instance.baseUrl, instance.apiPath, pat, instance.caBundlePath);
@@ -156,5 +157,5 @@ export async function publishReviewSession(
   }
 
   treeProvider.refresh();
-  decorationManager.refresh();
+  await commentUi.refresh();
 }

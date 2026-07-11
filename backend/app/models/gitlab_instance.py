@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -10,7 +13,7 @@ class GitLabInstance:
     display_name: str
     base_url: str
     api_path: str
-    ca_bundle_path: str | None
+    ca_bundle_path: Optional[str]
     created_at: datetime
     updated_at: datetime
 
@@ -19,7 +22,7 @@ class CreateGitLabInstanceRequest(BaseModel):
     display_name: str
     base_url: str
     api_path: str = "/api/v4"
-    ca_bundle_path: str | None = None
+    ca_bundle_path: Optional[str] = None
 
 
 class GitLabInstanceResponse(BaseModel):
@@ -27,7 +30,7 @@ class GitLabInstanceResponse(BaseModel):
     display_name: str
     base_url: str
     api_path: str
-    ca_bundle_path: str | None
+    ca_bundle_path: Optional[str]
     created_at: str
     updated_at: str
 

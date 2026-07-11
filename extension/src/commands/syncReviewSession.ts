@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { BackendClient } from '../api/backendClient';
-import type { DecorationManager } from '../decorations/decorationManager';
+import type { CommentUiSync } from './inlineCommentActions';
 import type { RepositoryTreeProvider, ReviewSessionTreeItem } from '../providers/repositoryTreeProvider';
 import { GitLabClient } from '../gitlab/gitlabClient';
 import { SecretStorageService } from '../gitlab/secretStorageService';
@@ -10,7 +10,7 @@ export async function syncReviewSession(
   item: ReviewSessionTreeItem,
   client: BackendClient,
   treeProvider: RepositoryTreeProvider,
-  decorationManager: DecorationManager,
+  commentUi: CommentUiSync,
   secrets: SecretStorageService,
 ): Promise<void> {
   let comments;
@@ -132,5 +132,5 @@ export async function syncReviewSession(
   }
 
   treeProvider.refresh();
-  decorationManager.refresh();
+  await commentUi.refresh();
 }

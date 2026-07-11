@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
 import type { BackendClient } from '../api/backendClient';
-import type { RepositoryTreeProvider } from '../providers/repositoryTreeProvider';
-import type { ReviewSessionTreeItem } from '../providers/repositoryTreeProvider';
+import type { CommentUiSync } from './inlineCommentActions';
+import type { RepositoryTreeProvider, ReviewSessionTreeItem } from '../providers/repositoryTreeProvider';
 
 export async function activateReviewSession(
   item: ReviewSessionTreeItem,
   client: BackendClient,
   treeProvider: RepositoryTreeProvider,
+  commentUi: CommentUiSync,
 ): Promise<void> {
   try {
     await client.activateReviewSession(item.session.id);
@@ -17,4 +18,5 @@ export async function activateReviewSession(
   }
 
   treeProvider.refresh();
+  await commentUi.refresh();
 }
