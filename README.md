@@ -62,7 +62,9 @@ Open the **ReviewFlow** panel in the activity bar. The extension sets up the Pyt
 2. Paste a Personal Access Token with `api` scope — ReviewFlow validates it immediately and shows **✓ Connected as @username**.
 3. Click **Add Repository** — point it to a local Git repository.
 4. Create a **Review Session** under the repository.
-5. Open a file, select a line, right-click → **ReviewFlow: Add Draft Comment**.
+5. Open a file, select a line or range, right-click → **ReviewFlow: Add Draft Comment**.
+   - A composer panel opens beside the editor — write your comment, pick a severity, then **Save Draft** or **Publish**.
+   - Saved drafts appear as gutter annotations. Click one to open the inline thread.
 6. Click **Publish Session to GitLab** when ready — enter the MR IID or paste the MR URL.
 
 ---
