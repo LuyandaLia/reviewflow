@@ -1,5 +1,19 @@
+import * as https from 'https';
 import * as vscode from 'vscode';
 import type { Severity } from '../providers/severity';
+
+// Models mirroring Cursor's agent model selector.
+// Extend this list as Cursor adds new models.
+export const CURSOR_MODELS = [
+  { id: 'claude-sonnet-4-5', label: 'claude-sonnet-4-5', description: 'Claude Sonnet 4.5 — Cursor default' },
+  { id: 'claude-opus-4-5', label: 'claude-opus-4-5', description: 'Claude Opus 4.5 — most capable' },
+  { id: 'claude-haiku-4-5-20251001', label: 'claude-haiku-4-5', description: 'Claude Haiku 4.5 — fastest' },
+  { id: 'claude-sonnet-4-6', label: 'claude-sonnet-4-6', description: 'Claude Sonnet 4.6' },
+] as const;
+
+export type CursorModelId = (typeof CURSOR_MODELS)[number]['id'];
+
+const MODEL_SETTING_KEY = 'reviewflow._aiModel';
 
 export interface CursorLmReviewInput {
   language: string;
@@ -16,32 +30,69 @@ export interface SingleCommentReview {
   body: string;
 }
 
-export async function reviewWithCursorLm(
+/**
+ * Picks a model if not yet configured, then calls the Anthropic API.
+ * Returns undefined if the user cancelled model or key selection.
+ */
+export async function reviewWithSelectedModel(
   input: CursorLmReviewInput,
+  apiKey: string,
+  modelId: string,
   token: vscode.CancellationToken,
 ): Promise<SingleCommentReview> {
-  const models = await vscode.lm.selectChatModels();
-  if (models.length === 0) {
-    throw new Error('No AI model is available. Enable GitHub Copilot or another AI provider in Cursor.');
+  const body = JSON.stringify({
+    model: modelId,
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: _buildPrompt(input) }],
+  });
+
+  if (token.isCancellationRequested) throw new vscode.CancellationError();
+
+  const raw = await _anthropicPost(apiKey, body);
+
+  let responseText: string;
+  try {
+    const parsed = JSON.parse(raw) as { content?: Array<{ type: string; text?: string }> };
+    responseText = parsed.content?.find((b) => b.type === 'text')?.text ?? '';
+  } catch {
+    throw new Error('Unexpected response from Anthropic API.');
   }
 
-  const [model] = models;
-  const messages = [vscode.LanguageModelChatMessage.User(_buildPrompt(input))];
-
-  const response = await model.sendRequest(
-    messages,
-    { justification: 'Generating a draft code review comment for ReviewFlow' },
-    token,
-  );
-
-  let raw = '';
-  for await (const chunk of response.text) {
-    if (token.isCancellationRequested) throw new vscode.CancellationError();
-    raw += chunk;
-  }
-
-  return _parseResponse(raw);
+  return _parseResponse(responseText);
 }
+
+/** Prompt the user to pick a model from the Cursor model list. Returns undefined on cancel. */
+export async function pickModel(): Promise<CursorModelId | undefined> {
+  const saved = vscode.workspace.getConfiguration().get<string>(MODEL_SETTING_KEY);
+  if (saved && CURSOR_MODELS.some((m) => m.id === saved)) {
+    return saved as CursorModelId;
+  }
+
+  const items = CURSOR_MODELS.map((m) => ({
+    label: m.label,
+    description: m.description,
+    id: m.id,
+  }));
+
+  const pick = await vscode.window.showQuickPick(items, {
+    title: 'ReviewFlow: Select AI model',
+    placeHolder: 'Choose the model to use for code reviews (matches Cursor model selector)',
+    ignoreFocusOut: true,
+  });
+
+  if (!pick) return undefined;
+
+  // Persist selection
+  await vscode.workspace
+    .getConfiguration()
+    .update(MODEL_SETTING_KEY, pick.id, vscode.ConfigurationTarget.Global);
+
+  return pick.id as CursorModelId;
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
 
 function _buildPrompt(input: CursorLmReviewInput): string {
   const lineRange =
@@ -120,4 +171,36 @@ function _parseResponse(raw: string): SingleCommentReview {
     title: obj.title.trim(),
     body: obj.body.trim(),
   };
+}
+
+function _anthropicPost(apiKey: string, body: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      'https://api.anthropic.com/v1/messages',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Length': Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => {
+          const text = Buffer.concat(chunks).toString('utf8');
+          if (res.statusCode != null && res.statusCode >= 400) {
+            reject(new Error(`${res.statusCode}: ${text}`));
+          } else {
+            resolve(text);
+          }
+        });
+      },
+    );
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
 }

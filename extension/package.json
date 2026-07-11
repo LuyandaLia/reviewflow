@@ -455,7 +455,17 @@
         "key": "escape",
         "when": "commentController == reviewflow && commentFocused"
       }
-    ]
+    ],
+    "configuration": {
+      "properties": {
+        "reviewflow._aiModel": {
+          "type": "string",
+          "default": "",
+          "description": "AI model used for ReviewFlow AI Review. Set automatically on first use via the model picker. Clear to re-prompt.",
+          "scope": "application"
+        }
+      }
+    }
   },
   "scripts": {
     "compile": "tsc -p ./",
