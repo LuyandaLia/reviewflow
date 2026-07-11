@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { DraftComment, Repository } from '../models/types';
 import type { DraftCommentController } from './draftCommentController';
 import type { ComposerWebviewPanel } from './composerWebviewPanel';
+import type { Severity } from './severity';
 
 export class InlineCommentComposer {
   constructor(
@@ -11,6 +12,14 @@ export class InlineCommentComposer {
 
   async openNew(editor: vscode.TextEditor): Promise<void> {
     await this._composerPanel.openForNew(editor);
+  }
+
+  async openNewWithText(
+    editor: vscode.TextEditor,
+    initialText: string,
+    severity: Severity,
+  ): Promise<void> {
+    await this._composerPanel.openForNewWithText(editor, initialText, severity);
   }
 
   async openExisting(comment: DraftComment, repo: Repository): Promise<void> {

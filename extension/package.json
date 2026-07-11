@@ -1,7 +1,7 @@
 {
   "name": "reviewflow",
-  "displayName": "ReviewFlow — GitLab Code Reviews",
-  "description": "Review code where you write it. IDE-native GitLab merge request workspace for Cursor and VS Code — draft comments, review sessions, and publish to GitLab without leaving the editor.",
+  "displayName": "ReviewFlow \u2014 GitLab Code Reviews",
+  "description": "Review code where you write it. IDE-native GitLab merge request workspace for Cursor and VS Code \u2014 draft comments, review sessions, and publish to GitLab without leaving the editor.",
   "version": "0.1.0",
   "publisher": "LuyandaLia",
   "author": {
@@ -41,7 +41,7 @@
     "open source"
   ],
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.90.0"
   },
   "categories": [
     "SCM Providers",
@@ -56,7 +56,8 @@
     "onCommand:reviewflow.createReviewSession",
     "onCommand:reviewflow.publishDraftComment",
     "onCommand:reviewflow.publishReviewSession",
-    "onStartupFinished"
+    "onStartupFinished",
+    "onCommand:reviewflow.aiReviewSelectedCode"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -236,6 +237,10 @@
       {
         "command": "reviewflow.changeMrIid",
         "title": "ReviewFlow: Change MR IID"
+      },
+      {
+        "command": "reviewflow.aiReviewSelectedCode",
+        "title": "ReviewFlow: AI Review Selected Code"
       }
     ],
     "menus": {
@@ -332,6 +337,11 @@
         {
           "command": "reviewflow.addDraftComment",
           "group": "reviewflow@1"
+        },
+        {
+          "command": "reviewflow.aiReviewSelectedCode",
+          "group": "reviewflow@2",
+          "when": "reviewflow.backendAvailable && editorHasSelection"
         }
       ],
       "comments/commentThread/title": [

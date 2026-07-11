@@ -13,6 +13,7 @@ import { removeGitLabInstance } from './commands/removeGitLabInstance';
 import { addRepository } from './commands/addRepository';
 import { removeRepository } from './commands/removeRepository';
 import { addDraftComment } from './commands/addDraftComment';
+import { aiReviewSelectedCode } from './commands/aiReviewSelectedCode';
 import { editDraftComment } from './commands/editDraftComment';
 import { removeDraftComment } from './commands/removeDraftComment';
 import { createReviewSession } from './commands/createReviewSession';
@@ -121,6 +122,10 @@ export function activate(context: vscode.ExtensionContext): void {
 
     vscode.commands.registerCommand('reviewflow.addDraftComment', () =>
       addDraftComment(composer),
+    ),
+
+    vscode.commands.registerCommand('reviewflow.aiReviewSelectedCode', () =>
+      aiReviewSelectedCode(composer),
     ),
 
     vscode.commands.registerCommand(
