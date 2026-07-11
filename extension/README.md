@@ -8,11 +8,11 @@ ReviewFlow is an IDE-native GitLab code review workspace for Cursor and VS Code.
 
 ## Features
 
-- **Draft inline comments** — highlight code, add a review comment, see it in the gutter
-- **Review sessions** — group comments by branch or MR; keep drafts until you're ready
-- **Publish to GitLab** — post comments as inline MR discussions in one click
+- **Native inline comment threads** — comments appear as VS Code gutter annotations directly in the file you're reviewing; no sidebar required
+- **Webview composer** — a focused split-pane editor for writing comments, with severity selection (info / warning / error) and Markdown support
+- **Review sessions** — group comments by branch or MR; keep drafts until you're ready to publish
+- **Publish to GitLab** — post comments as inline MR discussions in one click, from the gutter thread or the sidebar
 - **Sync with GitLab** — check whether published notes still exist on the MR
-- **AI suggestions** — optional AI-assisted comments powered by Anthropic Claude *(currently in testing)*
 - **Self-hosted support** — works with GitLab.com and any self-hosted GitLab instance
 
 ---
@@ -71,6 +71,8 @@ All you need is **Python 3.11+** installed and available on your PATH.
 4. Click **Add Repository** — point it to a local Git repository you want to review.
 5. Create a **Review Session** under the repository.
 6. Open a file, select a line or range, right-click → **ReviewFlow: Add Draft Comment**.
+   - A composer panel opens beside the editor — write your comment, set the severity, then **Save Draft** or **Publish**.
+   - Saved drafts appear as gutter annotations in the file. Click the annotation to see the inline thread.
 7. When ready, click **Publish Session to GitLab** — enter the MR IID or paste the MR URL.
 
 ---
