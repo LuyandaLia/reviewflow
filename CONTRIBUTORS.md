@@ -8,7 +8,6 @@ Thank you to everyone who has contributed to ReviewFlow.
 
 ### Luyanda Gcabo — Creator & Lead Developer
 - GitHub: [@LuyandaLia](https://github.com/LuyandaLia)
-- Email: Liagcabo@gmail.com
 - Designed and built ReviewFlow from the ground up — architecture, backend, extension, and branding.
 
 ---
