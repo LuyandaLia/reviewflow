@@ -137,6 +137,7 @@ export interface PublishResult {
 export interface ReviewerIdentity {
   username: string;
   email?: string | null;
+  instanceOrigin: string;
 }
 
 export async function publishSingleComment(
@@ -180,11 +181,9 @@ function _buildFooter(reviewer?: ReviewerIdentity): string {
   if (!reviewer || _isProjectBot(reviewer.username)) {
     return '*ReviewFlow*';
   }
-  // Use \n\n between each element — single \n renders as a space in GitLab Markdown
-  let footer = '**ReviewFlow**\n\n';
-  if (reviewer.email) footer += `${reviewer.email}\n\n`;
-  footer += `@${reviewer.username}`;
-  return footer;
+  const profileUrl = `${reviewer.instanceOrigin}/${reviewer.username}`;
+  const label = reviewer.email ?? `@${reviewer.username}`;
+  return `**ReviewFlow**\n\n[${label}](${profileUrl})`;
 }
 
 function _isProjectBot(username: string): boolean {

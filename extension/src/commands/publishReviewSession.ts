@@ -63,7 +63,9 @@ export async function publishReviewSession(
   // Look up stored reviewer profile for comment attribution (best-effort)
   const storedUser = await client.getInstanceUser(instance.id);
   const reviewer: ReviewerIdentity | undefined =
-    storedUser ? { username: storedUser.username, email: storedUser.email } : undefined;
+    storedUser
+      ? { username: storedUser.username, email: storedUser.email, instanceOrigin: new URL(instance.baseUrl).origin }
+      : undefined;
   const publishedAt = new Date().toISOString();
 
   let successCount = 0;

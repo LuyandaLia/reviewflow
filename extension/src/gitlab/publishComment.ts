@@ -51,7 +51,7 @@ export async function publishCommentToGitLab(
   const glClient = new GitLabClient(instance.baseUrl, instance.apiPath, pat, instance.caBundlePath);
   const storedUser = await client.getInstanceUser(instance.id);
   const reviewer: ReviewerIdentity | undefined = storedUser
-    ? { username: storedUser.username, email: storedUser.email }
+    ? { username: storedUser.username, email: storedUser.email, instanceOrigin: new URL(instance.baseUrl).origin }
     : undefined;
 
   let success = false;
