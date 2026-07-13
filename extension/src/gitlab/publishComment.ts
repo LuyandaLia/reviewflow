@@ -98,7 +98,7 @@ export async function publishCommentToGitLab(
         }
         success = true;
       } catch (err) {
-        const wasAuthError = await handleAuthError(err, secrets, instance);
+        const wasAuthError = await handleAuthError(err, secrets, instance, client);
         if (!wasAuthError) {
           await client.updateCommentPublishStatus(comment.id, 'failed');
           vscode.window.showErrorMessage(`ReviewFlow: Publish failed — ${formatGitLabError(err)}`);

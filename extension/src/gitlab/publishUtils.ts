@@ -10,7 +10,26 @@ export async function getOrPromptPat(
   client: BackendClient,
 ): Promise<string | undefined> {
   const stored = await secrets.getPat(instance.id);
-  if (stored) return stored;
+  if (stored) {
+    // Backfill user profile if it was lost (e.g. silent upsert failure on a prior auth cycle)
+    const existingUser = await client.getInstanceUser(instance.id);
+    if (!existingUser) {
+      try {
+        const glClient = new GitLabClient(instance.baseUrl, instance.apiPath, stored, instance.caBundlePath);
+        const user = await glClient.getCurrentUser();
+        await client.upsertInstanceUser(instance.id, {
+          gitlabUserId: user.id,
+          username: user.username,
+          displayName: user.name,
+          email: user.email,
+          avatarUrl: user.avatar_url,
+        });
+      } catch {
+        // Non-fatal — comment attribution is best-effort
+      }
+    }
+    return stored;
+  }
 
   const pat = await vscode.window.showInputBox({
     prompt: `Personal Access Token for ${instance.displayName} (${instance.baseUrl})`,
@@ -185,20 +204,33 @@ export async function handleAuthError(
   err: unknown,
   secrets: SecretStorageService,
   instance: GitLabInstance,
+  client?: BackendClient,
 ): Promise<boolean> {
-  if (err instanceof GitLabApiError && (err.status === 401 || err.status === 403)) {
-    const action = await vscode.window.showErrorMessage(
-      `ReviewFlow: GitLab authentication failed for ${instance.displayName}. Token may have expired.`,
-      'Update Token',
-      'Cancel',
-    );
-    if (action === 'Update Token') {
-      await secrets.deletePat(instance.id);
+  if (!(err instanceof GitLabApiError && (err.status === 401 || err.status === 403))) {
+    return false;
+  }
+
+  const detail =
+    err.status === 403
+      ? 'Token lacks required API scope or access to this project.'
+      : 'Token is invalid or expired.';
+
+  const action = await vscode.window.showErrorMessage(
+    `ReviewFlow: GitLab authentication failed for ${instance.displayName}. ${detail}`,
+    'Update Token',
+    'Cancel',
+  );
+
+  if (action === 'Update Token') {
+    await secrets.deletePat(instance.id);
+    if (client) {
+      await getOrPromptPat(secrets, instance, client);
+    } else {
       vscode.window.showInformationMessage(
         'ReviewFlow: Token cleared — run Publish again to enter a new token.',
       );
     }
-    return true;
   }
-  return false;
+
+  return true;
 }

@@ -85,7 +85,7 @@ export async function publishReviewSession(
         project = await glClient.resolveProject(item.repo.gitlabProjectPath);
         mr = await glClient.getMR(project.id, mrIid);
       } catch (err) {
-        authFailed = await handleAuthError(err, secrets, instance);
+        authFailed = await handleAuthError(err, secrets, instance, client);
         if (!authFailed) {
           vscode.window.showErrorMessage(
             `ReviewFlow: Cannot connect to GitLab — ${formatGitLabError(err)}`,
@@ -123,7 +123,7 @@ export async function publishReviewSession(
           successCount++;
           if (!isInline) noteCount++;
         } catch (err) {
-          const wasAuth = await handleAuthError(err, secrets, instance);
+          const wasAuth = await handleAuthError(err, secrets, instance, client);
           if (wasAuth) {
             authFailed = true;
             for (let j = i; j < toPublish.length; j++) {
