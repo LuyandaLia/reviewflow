@@ -39,7 +39,6 @@ import { ComposerWebviewPanel } from './providers/composerWebviewPanel';
 import { ReviewComment } from './providers/reviewComment';
 import { SecretStorageService } from './gitlab/secretStorageService';
 import {
-  isFirstRun,
   isSetupPending,
   markSetupComplete,
   restoreSetupPendingContext,
@@ -307,17 +306,14 @@ export function activate(context: vscode.ExtensionContext): void {
       // Restore the setupPending context variable after a restart
       restoreSetupPendingContext(context);
 
-      // Show the welcome dialog the very first time the extension activates
-      if (isFirstRun(context)) {
-        const instances = await client.listGitLabInstances().catch(() => []);
-        if (instances.length === 0) {
-          void showWelcomeDialog(context, () =>
-            runSetupWizard(client, secretsService, treeProvider),
-          );
-        } else {
-          // Already configured (e.g. migrated from an older version) — skip welcome
-          await context.globalState.update('reviewflow.hasSeenWelcome', true);
-        }
+      // Show the welcome dialog whenever no instances are configured and the user
+      // hasn't already clicked "Later" (setupPending). This naturally handles
+      // reinstalls where globalState persists but the backend DB is fresh.
+      const instances = await client.listGitLabInstances().catch(() => []);
+      if (instances.length === 0 && !isSetupPending(context)) {
+        void showWelcomeDialog(context, () =>
+          runSetupWizard(client, secretsService, treeProvider),
+        );
       }
     })
     .catch((err: Error) => {
