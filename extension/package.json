@@ -49,6 +49,7 @@
   ],
   "activationEvents": [
     "onView:reviewflow.repositories",
+    "onCommand:reviewflow.setup",
     "onCommand:reviewflow.addGitLabInstance",
     "onCommand:reviewflow.addRepository",
     "onCommand:reviewflow.addDraftComment",
@@ -85,11 +86,21 @@
       },
       {
         "view": "reviewflow.repositories",
-        "contents": "No GitLab instances registered.\n[Add GitLab Instance](command:reviewflow.addGitLabInstance)\n\nOnce you have an instance, you can register repositories.",
-        "when": "reviewflow.backendAvailable && !reviewflow.hasInstances"
+        "contents": "Setup is not complete yet.\n[$(rocket) Complete Setup](command:reviewflow.setup)\n\nConnect to GitLab in under a minute.",
+        "when": "reviewflow.backendAvailable && !reviewflow.hasInstances && reviewflow.setupPending"
+      },
+      {
+        "view": "reviewflow.repositories",
+        "contents": "No GitLab instances configured.\n[$(server) Set Up ReviewFlow](command:reviewflow.setup)\n\nConnect to GitLab to start reviewing code.",
+        "when": "reviewflow.backendAvailable && !reviewflow.hasInstances && !reviewflow.setupPending"
       }
     ],
     "commands": [
+      {
+        "command": "reviewflow.setup",
+        "title": "ReviewFlow: Setup",
+        "icon": "$(add)"
+      },
       {
         "command": "reviewflow.retryConnection",
         "title": "ReviewFlow: Retry Connection",
@@ -241,19 +252,14 @@
     "menus": {
       "view/title": [
         {
-          "command": "reviewflow.addGitLabInstance",
+          "command": "reviewflow.setup",
           "when": "view == reviewflow.repositories",
           "group": "navigation@1"
         },
         {
-          "command": "reviewflow.addRepository",
-          "when": "view == reviewflow.repositories && reviewflow.hasInstances",
-          "group": "navigation@2"
-        },
-        {
           "command": "reviewflow.refreshRepositories",
           "when": "view == reviewflow.repositories",
-          "group": "navigation@3"
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -391,6 +397,14 @@
         }
       ],
       "commandPalette": [
+        {
+          "command": "reviewflow.addGitLabInstance",
+          "when": "false"
+        },
+        {
+          "command": "reviewflow.addRepository",
+          "when": "false"
+        },
         {
           "command": "reviewflow.saveInlineDraft",
           "when": "false"

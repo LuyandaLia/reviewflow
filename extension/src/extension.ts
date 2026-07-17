@@ -8,6 +8,7 @@ import type {
   RepoTreeItem,
   ReviewSessionTreeItem,
 } from './providers/repositoryTreeProvider';
+import { runSetupWizard } from './commands/setup';
 import { addGitLabInstance } from './commands/addGitLabInstance';
 import { removeGitLabInstance } from './commands/removeGitLabInstance';
 import { addRepository } from './commands/addRepository';
@@ -37,6 +38,13 @@ import { InlineCommentComposer } from './providers/inlineCommentComposer';
 import { ComposerWebviewPanel } from './providers/composerWebviewPanel';
 import { ReviewComment } from './providers/reviewComment';
 import { SecretStorageService } from './gitlab/secretStorageService';
+import {
+  isFirstRun,
+  isSetupPending,
+  markSetupComplete,
+  restoreSetupPendingContext,
+  showWelcomeDialog,
+} from './onboarding';
 
 export function activate(context: vscode.ExtensionContext): void {
   const manager = new BackendManager();
@@ -99,6 +107,13 @@ export function activate(context: vscode.ExtensionContext): void {
 
     vscode.commands.registerCommand('reviewflow.retryConnection', () => {
       treeProvider.refresh();
+    }),
+
+    vscode.commands.registerCommand('reviewflow.setup', async () => {
+      const succeeded = await runSetupWizard(client, secretsService, treeProvider);
+      if (succeeded) {
+        await markSetupComplete(context);
+      }
     }),
 
     vscode.commands.registerCommand('reviewflow.addGitLabInstance', () =>
@@ -284,10 +299,26 @@ export function activate(context: vscode.ExtensionContext): void {
 
   manager
     .ensureRunning(context.extensionPath)
-    .then(() => {
+    .then(async () => {
       treeProvider.setReady();
       treeProvider.refresh();
       void refreshCommentUi();
+
+      // Restore the setupPending context variable after a restart
+      restoreSetupPendingContext(context);
+
+      // Show the welcome dialog the very first time the extension activates
+      if (isFirstRun(context)) {
+        const instances = await client.listGitLabInstances().catch(() => []);
+        if (instances.length === 0) {
+          void showWelcomeDialog(context, () =>
+            runSetupWizard(client, secretsService, treeProvider),
+          );
+        } else {
+          // Already configured (e.g. migrated from an older version) — skip welcome
+          await context.globalState.update('reviewflow.hasSeenWelcome', true);
+        }
+      }
     })
     .catch((err: Error) => {
       treeProvider.setReady();
