@@ -60,8 +60,21 @@ export async function publishReviewSession(
 
   const glClient = new GitLabClient(instance.baseUrl, instance.apiPath, pat, instance.caBundlePath);
 
-  // Look up stored reviewer profile for comment attribution (best-effort)
-  const storedUser = await client.getInstanceUser(instance.id);
+  let storedUser = await client.getInstanceUser(instance.id);
+  if (!storedUser) {
+    try {
+      const user = await glClient.getCurrentUser();
+      storedUser = await client.upsertInstanceUser(instance.id, {
+        gitlabUserId: user.id,
+        username: user.username,
+        displayName: user.name,
+        email: user.email,
+        avatarUrl: user.avatar_url,
+      });
+    } catch {
+      // Non-fatal — comments will publish without username attribution
+    }
+  }
   const reviewer: ReviewerIdentity | undefined =
     storedUser
       ? { username: storedUser.username, email: storedUser.email, instanceOrigin: new URL(instance.baseUrl).origin }

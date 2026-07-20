@@ -73,10 +73,11 @@ export async function getOrPromptPat(
   return trimmed;
 }
 
-export async function promptMrIid(repo: Repository): Promise<number | undefined> {
+export async function promptMrIid(repo: Repository, defaultValue?: number): Promise<number | undefined> {
   const input = await vscode.window.showInputBox({
     prompt: `MR IID or full URL for repository "${repo.gitlabProjectPath}"`,
     placeHolder: '42  or  https://gitlab.example.com/group/project/-/merge_requests/42',
+    value: defaultValue ? String(defaultValue) : '',
     ignoreFocusOut: true,
   });
 
@@ -117,11 +118,8 @@ export async function getOrPromptMrIid(
 ): Promise<number | undefined> {
   const key = `reviewflow.lastMrIid.${repo.id}`;
   const cached = extensionContext.globalState.get<number>(key);
-  if (cached && cached > 0) {
-    return cached;
-  }
 
-  const iid = await promptMrIid(repo);
+  const iid = await promptMrIid(repo, cached && cached > 0 ? cached : undefined);
   if (iid) {
     await extensionContext.globalState.update(key, iid);
   }
